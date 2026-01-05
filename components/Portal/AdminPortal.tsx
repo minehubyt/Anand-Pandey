@@ -9,7 +9,7 @@ import {
   Sun, Moon, ChevronRight, Download, Link, ExternalLink,
   Heading1, Heading2, AlignLeft, Type, FileUp, Music, Database,
   Linkedin, MessageCircle, Mail, BookOpen, Star, Palette, List, Maximize2, Monitor,
-  UserCheck, GraduationCap, Eye, Loader2
+  UserCheck, GraduationCap, Eye, Loader2, AlertTriangle
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import { emailService } from '../../services/emailService';
@@ -22,7 +22,7 @@ interface AdminPortalProps {
 type Tab = 'hero' | 'insights' | 'reports' | 'podcasts' | 'casestudy' | 'authors' | 'offices' | 'appointments' | 'rfp' | 'jobs' | 'applications';
 
 // --- UTILITY: Aggressive Image Compression ---
-// Ensures images are small enough to write to Firestore instantly without clogging the stream.
+// Updated to be even more aggressive to safely stay under Firestore 1MB document limit (base64 overhead)
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,8 +35,8 @@ const compressImage = (file: File): Promise<string> => {
         let width = img.width;
         let height = img.height;
         
-        // Strict Limit: Max 1000px (Good balance for Hero banners)
-        const MAX_SIZE = 1000;
+        // Strict Limit: Max 800px (Prevents base64 string from exceeding ~700KB)
+        const MAX_SIZE = 800;
         if (width > height) {
           if (width > MAX_SIZE) {
             height *= MAX_SIZE / width;
@@ -54,8 +54,8 @@ const compressImage = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Compress to JPEG at 0.7 quality (Good balance of speed/quality)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+        // Compress to JPEG at 0.5 quality (High compression for database storage)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
         resolve(dataUrl);
       };
       img.onerror = (err) => reject(err);
@@ -141,26 +141,37 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     setIsSaving(true);
     const entityToSave = { ...activeEntity };
     
+    // Safety Timeout: If Firebase takes > 15s, reject (likely image too big or network down)
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Operation timed out. The image might be too large for the database.")), 15000)
+    );
+
     try {
         console.log(`Saving ${activeTab}...`);
-        if (activeTab === 'hero') {
-          await contentService.saveHero(entityToSave);
-          setHero(entityToSave as HeroContent); // Update local state
-        } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
-          await contentService.saveInsight(entityToSave);
-        } else if (activeTab === 'authors') {
-          await contentService.saveAuthor(entityToSave);
-        } else if (activeTab === 'offices') {
-          await contentService.saveOffice(entityToSave);
-        } else if (activeTab === 'jobs') {
-          await contentService.saveJob(entityToSave);
-        }
+        
+        const savePromise = (async () => {
+          if (activeTab === 'hero') {
+            await contentService.saveHero(entityToSave);
+            setHero(entityToSave as HeroContent); 
+          } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
+            await contentService.saveInsight(entityToSave);
+          } else if (activeTab === 'authors') {
+            await contentService.saveAuthor(entityToSave);
+          } else if (activeTab === 'offices') {
+            await contentService.saveOffice(entityToSave);
+          } else if (activeTab === 'jobs') {
+            await contentService.saveJob(entityToSave);
+          }
+        })();
+
+        await Promise.race([savePromise, timeoutPromise]);
+
         console.log('Save successful');
         setIsEditing(false);
         setActiveEntity(null);
     } catch (err: any) {
         console.error("Save Error:", err);
-        alert(`Failed to save. Error: ${err.message || 'Unknown issue'}. If uploading an image, try a smaller file.`);
+        alert(`Failed to save: ${err.message}. \n\nTip: Try a different or smaller image.`);
     } finally {
         setIsSaving(false);
     }
@@ -184,45 +195,31 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const handleAppStatusChange = (status: JobApplication['status']) => {
     if (!selectedApp) return;
     
-    // 1. Capture snapshot for background task
     const appToUpdate = { ...selectedApp };
     const appId = appToUpdate.id;
     const applicantName = appToUpdate.data?.personal?.name || 'Candidate';
     const applicantEmail = appToUpdate.data?.personal?.email;
     const jobTitle = appToUpdate.jobTitle;
 
-    // 2. INSTANT UI FEEDBACK (OPTIMISTIC UPDATE)
-    // Update the applications list locally immediately
     setApplications(prev => prev.map(app => 
         app.id === appId ? { ...app, status: status } : app
     ));
     
-    // Close the modal immediately so the user isn't stuck waiting.
     setSelectedApp(null);
     
-    if (!applicantEmail) {
-        console.error("Cannot send email: Candidate email is missing.");
-        return;
-    }
+    if (!applicantEmail) return;
 
-    // 3. Background Process (Fire and Forget)
     (async () => {
         try {
-            // Update Database
             await contentService.updateApplicationStatus(appId, status);
-            
-            // Send Email Notification
             await emailService.sendApplicationStatusUpdate({
                 name: applicantName,
                 email: applicantEmail,
                 jobTitle: jobTitle,
                 status: status
             });
-            console.log(`Background status update complete for ${applicantName}`);
         } catch (err) {
-            console.error("Background Status Update Failed (Check Console)", err);
-            // Revert local state if DB update fails (optional, but good practice)
-            // For now, we assume success to keep UI snappy.
+            console.error("Background Status Update Failed", err);
         }
     })();
   };
@@ -333,9 +330,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
           {isEditing ? (
             <div className={`p-12 rounded-3xl border shadow-2xl relative ${isDarkMode ? 'bg-[#111216] border-white/5' : 'bg-white border-slate-100'}`}>
                {isSaving && (
-                 <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-3xl">
-                   <Loader2 className="w-12 h-12 text-[#CC1414] animate-spin mb-4" />
-                   <span className="text-xs font-bold uppercase tracking-widest text-slate-900">Saving Protocols...</span>
+                 <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-50 flex flex-col items-center justify-center rounded-3xl">
+                   <div className="relative">
+                      <div className="w-16 h-16 border-4 border-slate-200 border-t-[#CC1414] rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                         <Database size={20} className="text-slate-400" />
+                      </div>
+                   </div>
+                   <span className="text-xs font-bold uppercase tracking-widest text-slate-900 mt-6 animate-pulse">Compressing & Saving...</span>
+                   <span className="text-[10px] text-slate-500 mt-2 font-light">Large images may take a few seconds.</span>
                  </div>
                )}
                <div className="flex justify-between items-center mb-12">
@@ -504,7 +507,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                            className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
                            {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>}
-                           {isSaving ? 'UPLOADING...' : 'AUTHORIZE SAVE'}
+                           {isSaving ? 'OPTIMIZING & SAVING...' : 'AUTHORIZE SAVE'}
                         </button>
                         <button onClick={() => setIsEditing(false)} disabled={isSaving} className="px-12 py-5 bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-200">Cancel</button>
                      </div>

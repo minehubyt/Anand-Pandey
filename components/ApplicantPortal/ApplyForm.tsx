@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Upload, User, BookOpen, Heart, CheckCircle, FileText, Loader2, Sparkles, Camera, X } from 'lucide-react';
 import { parseResume } from '../../services/geminiService';
@@ -35,25 +34,60 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Check for supported types
+    const supportedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const isSupported = supportedTypes.includes(file.type);
+    
+    // If not supported strictly, we still try but warn if it fails
+    // Note: Gemini supports PDF and Images best. DOCX is hit or miss without conversion.
+    
     setIsParsing(true);
-    // In a real app, we'd extract text from the PDF. 
-    // For this demo, we simulate extraction and send to Gemini.
-    setTimeout(async () => {
-      const parsed = await parseResume("Mock Resume Content: John Doe, john.doe@email.com, 9876543210. LL.M from NLU. 5 years litigation at High Court.");
-      if (parsed) {
-        setFormData(prev => ({
-          ...prev,
-          name: parsed.name || prev.name,
-          email: parsed.email || prev.email,
-          mobile: parsed.mobile || prev.mobile,
-          education: parsed.education || prev.education,
-          experience: parsed.experience || prev.experience,
-          interests: parsed.interests || prev.interests
-        }));
-      }
-      setIsParsing(false);
-      setSlide('personal');
-    }, 1500);
+
+    try {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const base64String = event.target?.result as string;
+            // Use file.type, default to PDF if missing (unlikely for file input)
+            const mimeType = file.type || 'application/pdf';
+
+            try {
+                const parsed = await parseResume(base64String, mimeType);
+                
+                if (parsed) {
+                    setFormData(prev => ({
+                    ...prev,
+                    name: parsed.name || prev.name,
+                    email: parsed.email || prev.email,
+                    mobile: parsed.mobile || prev.mobile,
+                    education: parsed.education || prev.education,
+                    experience: parsed.experience || prev.experience,
+                    interests: parsed.interests || prev.interests,
+                    resumeUrl: 'AI_PROCESSED_DOC'
+                    }));
+                    
+                    // Artificial delay for UX if parsing was too fast
+                    setTimeout(() => {
+                        setIsParsing(false);
+                        setSlide('personal');
+                    }, 500);
+                } else {
+                    throw new Error("Parsing returned null");
+                }
+            } catch (err) {
+                console.error("Parsing logic error", err);
+                setIsParsing(false);
+                alert("We couldn't auto-read this document format. Please enter details manually.");
+            }
+        };
+        reader.onerror = () => {
+            setIsParsing(false);
+            alert("Error reading file.");
+        };
+        reader.readAsDataURL(file);
+    } catch (err) {
+        setIsParsing(false);
+        console.error(err);
+    }
   };
 
   const handleSubmit = async () => {
@@ -122,19 +156,19 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
               Experience our AI-integrated recruitment process. You can upload your resume to auto-populate the dossier or fill it manually with precision.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-               <label className="p-12 border-2 border-dashed border-slate-100 bg-slate-50 hover:border-[#CC1414] hover:bg-white transition-all cursor-pointer group relative overflow-hidden">
+               <label className={`p-12 border-2 border-dashed border-slate-100 bg-slate-50 hover:border-[#CC1414] hover:bg-white transition-all cursor-pointer group relative overflow-hidden ${isParsing ? 'pointer-events-none opacity-80' : ''}`}>
                   {isParsing && (
                     <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-4">
                        <Loader2 className="animate-spin text-[#CC1414]" size={32} />
-                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Parsing Active...</span>
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Analysing Document...</span>
                     </div>
                   )}
-                  <input type="file" className="hidden" onChange={handleResumeUpload} accept=".pdf,.doc,.docx" />
+                  <input type="file" className="hidden" onChange={handleResumeUpload} accept=".pdf,image/*" />
                   <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                      <Sparkles className="text-[#CC1414]" size={32} />
                   </div>
                   <h3 className="text-2xl font-serif text-slate-900 mb-2">Upload Resume</h3>
-                  <p className="text-sm text-slate-400 font-light">Let our AI engine parse your history.</p>
+                  <p className="text-sm text-slate-400 font-light">PDF or Image format supported.</p>
                </label>
                <button onClick={() => setSlide('personal')} className="p-12 border border-slate-100 bg-white hover:border-slate-900 hover:shadow-2xl transition-all group">
                   <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
@@ -167,7 +201,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                   </div>
                   <div className="space-y-2">
                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email Address</label>
-                     <input value={formData.email} className="w-full p-4 bg-slate-50/50 border-b-2 border-slate-100 text-slate-400 outline-none text-xl font-light" disabled />
+                     <input value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-4 bg-slate-50/50 border-b-2 border-slate-100 text-slate-400 outline-none text-xl font-light" />
                   </div>
                </div>
             </div>

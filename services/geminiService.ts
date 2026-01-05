@@ -3,7 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 export const analyzeLegalQuery = async (query: string) => {
   try {
     // Initialize GoogleGenAI directly with the pre-configured process.env.API_KEY
-    // The build process will replace 'process.env.API_KEY' with the actual string value
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const response = await ai.models.generateContent({
@@ -34,15 +33,32 @@ export const analyzeLegalQuery = async (query: string) => {
   }
 };
 
-export const parseResume = async (resumeText: string) => {
+export const parseResume = async (base64Data: string, mimeType: string) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
+    // Ensure we strip the data URL prefix if present (e.g., "data:application/pdf;base64,")
+    const dataParts = base64Data.split(',');
+    const rawBase64 = dataParts.length > 1 ? dataParts[1] : dataParts[0];
+
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Extract detailed personal and professional information from this resume text. 
-      Return the data in a structured JSON format.
-      Resume Text: "${resumeText}"`,
+      model: "gemini-2.5-flash-latest",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: rawBase64
+              }
+            },
+            {
+              text: "Extract the following details from this resume document: Name, Email, Mobile Number, Education Summary, Professional Experience Summary, and Interests. Return as JSON."
+            }
+          ]
+        }
+      ],
       config: {
         responseMimeType: "application/json",
         responseSchema: {
