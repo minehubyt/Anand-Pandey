@@ -206,6 +206,7 @@ const App: React.FC = () => {
       case 'thinking': return <OurThinkingPage onBack={() => navigateTo('home')} onInsightClick={(id, title) => navigateTo('insight', id, title)} />;
       case 'practice': return <PracticeAreaPage id={view.id || ''} onBack={() => navigateTo('home')} onNavigate={navigateTo} />;
       case 'rfp': return <RFPPage onBack={() => navigateTo('home')} />;
+      case 'page': return <GenericPage id={view.id} onBack={() => navigateTo('home')} />;
       default:
         return (
           <>
