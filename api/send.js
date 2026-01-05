@@ -29,10 +29,9 @@ export default async function handler(req, res) {
     const { to, subject, html } = req.body;
     
     // Attempt to send email
-    // Note: On free Resend plans, you can only send to the email address registered to your account.
-    // Sending to other addresses will result in a 400/403 error.
+    // Sender updated to the verified domain
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'AK Pandey & Associates <noreply@thetaxjournal.in>',
       to: to,
       subject: subject,
       html: html,
