@@ -22,6 +22,49 @@ interface AdminPortalProps {
 
 type Tab = 'hero' | 'insights' | 'reports' | 'podcasts' | 'casestudy' | 'authors' | 'offices' | 'appointments' | 'rfp' | 'jobs' | 'applications';
 
+// --- UTILITY: Image Compression ---
+// Essential for "No Storage" setups. Compresses images to fit in Firestore 1MB limit.
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Resize logic: Max 1024px width/height to ensure < 1MB Base64 string
+        const MAX_SIZE = 1024;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG at 0.6 quality (Good balance for web)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<Tab>('hero');
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -110,8 +153,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
       }
       setIsEditing(false);
       setActiveEntity(null);
-    } catch (err) {
-      alert("Protocol error: Save failed.");
+    } catch (err: any) {
+      console.error("Save Error:", err);
+      let msg = "Protocol error: Save failed.";
+      if (err.code === 'resource-exhausted') {
+         msg = "Data Limit Exceeded: The image is too large for the database. Compression failed or file is too big.";
+      } else if (err.code === 'permission-denied') {
+         msg = "Access Denied: You do not have permission to modify this data.";
+      }
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -271,7 +321,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      {activeTab !== 'jobs' && (
                        <ImagePicker 
                           label={activeTab === 'hero' ? "Banner Backdrop" : "Thumbnail / Portrait"} 
-                          value={activeEntity.image || activeEntity.backgroundImage} 
+                          value={activeTab === 'hero' ? activeEntity.backgroundImage : activeEntity.image} 
                           onChange={(v: string) => {
                              if (activeTab === 'hero') setActiveEntity({...activeEntity, backgroundImage: v});
                              else setActiveEntity({...activeEntity, image: v});
@@ -420,8 +470,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      )}
 
                      <div className="pt-12 border-t border-white/5 flex gap-6">
-                        <button onClick={handleSave} className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3">
-                           <Save size={18}/> AUTHORIZE SAVE
+                        <button 
+                           onClick={handleSave} 
+                           disabled={loading}
+                           className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                           <Save size={18}/> {loading ? 'SAVING DATA...' : 'AUTHORIZE SAVE'}
                         </button>
                         <button onClick={() => setIsEditing(false)} className="px-12 py-5 bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest rounded-2xl">Cancel</button>
                      </div>
@@ -733,9 +787,13 @@ const ImagePicker = ({ label, value, onChange, isDark, wide }: any) => (
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (file) {
-              const reader = new FileReader();
-              reader.onloadend = () => onChange(reader.result);
-              reader.readAsDataURL(file);
+              try {
+                // Compress image before passing to state
+                const compressed = await compressImage(file);
+                onChange(compressed);
+              } catch (err) {
+                console.error("Compression failed", err);
+              }
             }
           }}
           className="absolute inset-0 opacity-0 cursor-pointer" 
