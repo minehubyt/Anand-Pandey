@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, FileText, Users, MapPin, 
@@ -10,7 +9,7 @@ import {
   Sun, Moon, ChevronRight, Download, Link, ExternalLink,
   Heading1, Heading2, AlignLeft, Type, FileUp, Music, Database,
   Linkedin, MessageCircle, Mail, BookOpen, Star, Palette, List, Maximize2, Monitor,
-  UserCheck, GraduationCap, Eye
+  UserCheck, GraduationCap, Eye, Loader2
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
 import { emailService } from '../../services/emailService';
@@ -36,8 +35,8 @@ const compressImage = (file: File): Promise<string> => {
         let width = img.width;
         let height = img.height;
         
-        // Strict Limit: Max 800px
-        const MAX_SIZE = 800;
+        // Strict Limit: Max 1000px (Good balance for Hero banners)
+        const MAX_SIZE = 1000;
         if (width > height) {
           if (width > MAX_SIZE) {
             height *= MAX_SIZE / width;
@@ -55,8 +54,8 @@ const compressImage = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Compress to JPEG at 0.6 quality (Good balance of speed/quality)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+        // Compress to JPEG at 0.7 quality (Good balance of speed/quality)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
         resolve(dataUrl);
       };
       img.onerror = (err) => reject(err);
@@ -82,10 +81,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
 
   // Editor States
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeEntity, setActiveEntity] = useState<any>(null);
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
-  
-  // NOTE: Removed appActionLoading state to prevent UI locking.
 
   useEffect(() => {
     setLoading(true);
@@ -116,6 +114,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
 
   const handleEdit = (entity: any, tab?: Tab) => {
     if (tab) setActiveTab(tab);
+    if (!entity) return; 
     setActiveEntity({ ...entity });
     setIsEditing(true);
   };
@@ -138,22 +137,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    // OPTIMISTIC UI PATTERN:
-    // 1. Capture the data to save
+  const handleSave = async () => {
+    setIsSaving(true);
     const entityToSave = { ...activeEntity };
     
-    // 2. Immediately close the UI to make it feel "Instant"
-    setIsEditing(false);
-    setActiveEntity(null);
-
-    // 3. Perform the actual database write in the background
-    const performBackgroundSave = async () => {
-      try {
+    try {
         console.log(`Saving ${activeTab}...`);
         if (activeTab === 'hero') {
-          setHero(entityToSave as HeroContent);
           await contentService.saveHero(entityToSave);
+          setHero(entityToSave as HeroContent); // Update local state
         } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
           await contentService.saveInsight(entityToSave);
         } else if (activeTab === 'authors') {
@@ -164,15 +156,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
           await contentService.saveJob(entityToSave);
         }
         console.log('Save successful');
-      } catch (err: any) {
-        console.error("Background Save Error:", err);
-        // Do not alert the user to prevent interrupting their flow, just log it.
-        // If it's a critical error, the data will just revert on next refresh.
-      }
-    };
-
-    // Trigger background process
-    performBackgroundSave();
+        setIsEditing(false);
+        setActiveEntity(null);
+    } catch (err: any) {
+        console.error("Save Error:", err);
+        alert(`Failed to save. Error: ${err.message || 'Unknown issue'}. If uploading an image, try a smaller file.`);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -340,7 +331,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
         {/* Dynamic Content Grid */}
         <div className="animate-reveal-up stagger-1">
           {isEditing ? (
-            <div className={`p-12 rounded-3xl border shadow-2xl ${isDarkMode ? 'bg-[#111216] border-white/5' : 'bg-white border-slate-100'}`}>
+            <div className={`p-12 rounded-3xl border shadow-2xl relative ${isDarkMode ? 'bg-[#111216] border-white/5' : 'bg-white border-slate-100'}`}>
+               {isSaving && (
+                 <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-3xl">
+                   <Loader2 className="w-12 h-12 text-[#CC1414] animate-spin mb-4" />
+                   <span className="text-xs font-bold uppercase tracking-widest text-slate-900">Saving Protocols...</span>
+                 </div>
+               )}
                <div className="flex justify-between items-center mb-12">
                   <h3 className="text-2xl font-serif">Editing Entity</h3>
                   <button onClick={() => setIsEditing(false)} className="p-3 bg-slate-100 rounded-full hover:bg-slate-200"><X size={20}/></button>
@@ -503,11 +500,13 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      <div className="pt-12 border-t border-white/5 flex gap-6">
                         <button 
                            onClick={handleSave} 
-                           className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3"
+                           disabled={isSaving}
+                           className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                         >
-                           <Save size={18}/> INSTANT SAVE
+                           {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>}
+                           {isSaving ? 'UPLOADING...' : 'AUTHORIZE SAVE'}
                         </button>
-                        <button onClick={() => setIsEditing(false)} className="px-12 py-5 bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest rounded-2xl">Cancel</button>
+                        <button onClick={() => setIsEditing(false)} disabled={isSaving} className="px-12 py-5 bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest rounded-2xl hover:bg-slate-200">Cancel</button>
                      </div>
                   </div>
                </div>

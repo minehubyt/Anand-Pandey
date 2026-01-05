@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { contentService } from '../services/contentService';
@@ -78,7 +77,8 @@ const Hero: React.FC = () => {
       {/* Background Images Layer */}
       {slides.map((slide, idx) => (
         <div 
-          key={`${slide.id}-bg-${idx}-${slide.image?.substring(0, 20)}`}
+          // Fix: Use slice(-20) to ensure uniqueness for base64 strings which share common prefixes
+          key={`${slide.id}-bg-${idx}-${slide.image?.slice(-20)}`}
           className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
           <img
