@@ -58,9 +58,13 @@ const Insights: React.FC<InsightsProps> = ({ onInsightClick }) => {
                   <span className="text-[8px] font-bold tracking-[0.2em] uppercase text-slate-400">{new Date(item.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 
-                <h3 className="text-lg font-serif text-slate-900 leading-snug group-hover:text-[#CC1414] transition-colors duration-500 mb-4 line-clamp-2">
+                <h3 className="text-lg font-serif text-slate-900 leading-snug group-hover:text-[#CC1414] transition-colors duration-500 mb-3 line-clamp-2">
                   {item.title}
                 </h3>
+
+                <p className="text-slate-500 font-light text-sm mb-6 line-clamp-3 leading-relaxed">
+                  {item.desc}
+                </p>
                 
                 <div className="flex items-center gap-2 text-[8px] font-bold tracking-[0.3em] uppercase text-slate-900 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-y-1 group-hover:translate-y-0">
                   <span>READ FULL ANALYSIS</span>

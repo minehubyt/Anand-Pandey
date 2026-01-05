@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface MegaMenuProps {
   activeMenu: string | null;
@@ -7,7 +6,7 @@ interface MegaMenuProps {
   onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking', id?: string) => void;
 }
 
-const MENU_DATA: Record<string, {
+export const MENU_DATA: Record<string, {
   sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string; href?: string }[] }[];
   featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string };
 }> = {
@@ -128,15 +127,15 @@ const MENU_DATA: Record<string, {
       {
         title: 'GLOBAL REACH',
         links: [
-          { name: 'Strategic Partnerships', type: 'page', id: 'partnerships' },
-          { name: 'Global Network', type: 'page', id: 'global-network' },
+          { name: 'London (Associate Office)', type: 'page', id: 'office-london' },
+          { name: 'Dubai (Associate Office)', type: 'page', id: 'office-dubai' },
         ]
       }
     ],
     featured: {
       title: 'Strategic Presence',
-      desc: 'Operating from the heart of India’s administrative and judicial capitals.',
-      image: 'https://images.unsplash.com/photo-1524492459413-5bc37ec4e271?auto=format&fit=crop&q=80&w=800',
+      desc: 'Located in key judicial and commercial capitals to serve clients better.',
+      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800',
       type: 'practice',
       id: 'locations'
     }
@@ -146,100 +145,108 @@ const MENU_DATA: Record<string, {
       {
         title: 'GET IN TOUCH',
         links: [
-          { name: 'Submit RFP', type: 'rfp', id: 'submit-rfp' },
-          { name: 'General Inquiries', type: 'page', id: 'contact' },
-          // Fixed: Changed type to 'booking' and removed href to prevent Home scroll
-          { name: 'Book an Appointment', type: 'booking', id: 'booking-page' },
+          { name: 'Book Consultation', type: 'booking', id: 'booking' },
+          { name: 'Submit RFP', type: 'rfp', id: 'rfp' },
+          { name: 'Media Inquiries', type: 'page', id: 'media' },
         ]
       },
       {
-        title: 'MEDIA',
+        title: 'CLIENT PORTAL',
         links: [
-          { name: 'Press Room', type: 'page', id: 'press' },
-          { name: 'Speaker Requests', type: 'page', id: 'speakers' },
+           { name: 'Client Login', type: 'booking', id: 'login' },
         ]
       }
     ],
     featured: {
-      title: 'Global Inquiries',
-      desc: 'For complex cross-border mandates, contact our specialized international liaison team.',
-      image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=800',
-      type: 'rfp',
-      id: 'submit-rfp'
+        title: 'Secure Intake',
+        desc: 'Our encrypted matrix ensures your legal matters are handled with absolute confidentiality.',
+        image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800',
+        type: 'booking',
+        id: 'booking'
     }
   }
 };
 
 const MegaMenu: React.FC<MegaMenuProps> = ({ activeMenu, onClose, onNavigate }) => {
-  if (!activeMenu || !MENU_DATA[activeMenu]) return null;
+  const [isVisible, setIsVisible] = useState(false);
+  const data = activeMenu ? MENU_DATA[activeMenu] : null;
 
-  const data = MENU_DATA[activeMenu];
+  useEffect(() => {
+    if (activeMenu) {
+        setIsVisible(true);
+    } else {
+        const timer = setTimeout(() => setIsVisible(false), 300);
+        return () => clearTimeout(timer);
+    }
+  }, [activeMenu]);
+
+  if (!activeMenu && !isVisible) return null;
 
   return (
     <div 
-      className="absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-2xl z-50 animate-fade-in-up"
+      className={`fixed top-16 left-0 w-full bg-white border-b border-slate-200 shadow-2xl z-40 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] origin-top ${activeMenu ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-95 -translate-y-2 pointer-events-none'}`}
       onMouseLeave={onClose}
     >
-      <div className="max-w-[1600px] mx-auto px-12 py-16 flex gap-20">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-12">
-          {data.sections.map((section, idx) => (
-            <div key={idx}>
-              <h4 className="text-[11px] font-bold tracking-[0.25em] uppercase text-slate-400 mb-6 pb-2 border-b border-slate-100">
-                {section.title}
-              </h4>
-              <ul className="space-y-4">
-                {section.links.map((link, lIdx) => (
-                  <li key={lIdx}>
-                    <button 
-                      onClick={() => {
-                        // Only scroll home if it's explicitly an anchor link on home
-                        if (link.href?.startsWith('#') && link.type !== 'booking') {
-                          onNavigate('home');
-                          setTimeout(() => {
-                             const el = document.getElementById(link.href!.substring(1));
-                             el?.scrollIntoView({ behavior: 'smooth' });
-                          }, 100);
-                        } else {
-                          onNavigate(link.type as any, link.id);
-                        }
-                        onClose();
-                      }}
-                      className="text-[15px] text-slate-900 hover:text-[#CC1414] transition-colors font-medium flex items-center group text-left"
-                    >
-                      {link.name}
-                      <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#CC1414]">→</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        {data.featured && (
-          <div className="w-[400px] bg-slate-50 p-8 flex flex-col group">
-             <div className="aspect-video overflow-hidden mb-6">
-               <img 
-                 src={data.featured.image} 
-                 alt={data.featured.title} 
-                 className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-               />
-             </div>
-             <h4 className="text-xl font-serif text-slate-900 mb-3">{data.featured.title}</h4>
-             <p className="text-sm text-slate-600 font-light leading-relaxed mb-6">
-               {data.featured.desc}
-             </p>
-             <button 
-              onClick={() => {
-                onNavigate(data.featured!.type as any, data.featured!.id);
-                onClose();
-              }}
-              className="mt-auto text-[11px] font-bold tracking-widest uppercase text-slate-900 border-b border-slate-900 pb-1 self-start hover:text-[#CC1414] hover:border-[#CC1414] transition-all"
-             >
-               LEARN MORE
-             </button>
+      <div className="max-w-[1920px] mx-auto px-12 lg:px-20 py-16">
+        <div className="grid grid-cols-12 gap-16">
+          
+          {/* Menu Sections */}
+          <div className="col-span-8 grid grid-cols-3 gap-12 border-r border-slate-100 pr-12">
+            {data?.sections.map((section, idx) => (
+              <div key={idx} className="space-y-8">
+                <h4 className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#CC1414] mb-6 flex items-center gap-3">
+                  <div className="w-8 h-px bg-[#CC1414]"></div>
+                  {section.title}
+                </h4>
+                <ul className="space-y-4">
+                  {section.links.map((link, lIdx) => (
+                    <li key={lIdx}>
+                      <a 
+                        href={link.href || '#'} 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onNavigate(link.type, link.id);
+                          onClose();
+                        }}
+                        className="text-[17px] font-serif text-slate-600 hover:text-[#CC1414] transition-colors block py-1 group flex items-center gap-2"
+                      >
+                         <span className="w-0 overflow-hidden group-hover:w-3 transition-all duration-300 opacity-0 group-hover:opacity-100 text-[#CC1414]">→</span>
+                         {link.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        )}
+
+          {/* Featured Content */}
+          <div className="col-span-4 pl-4">
+            {data?.featured && (
+              <div 
+                 className="relative group cursor-pointer overflow-hidden aspect-[4/3] bg-slate-100 shadow-lg"
+                 onClick={() => {
+                    onNavigate(data.featured!.type, data.featured!.id);
+                    onClose();
+                 }}
+              >
+                <img 
+                   src={data.featured.image} 
+                   alt={data.featured.title} 
+                   className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-70 transition-opacity"></div>
+                <div className="absolute bottom-0 left-0 p-8 text-white">
+                   <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3 text-white/80">FEATURED</p>
+                   <h3 className="text-2xl font-serif mb-4 leading-tight">{data.featured.title}</h3>
+                   <p className="text-sm font-light text-white/80 leading-relaxed mb-6">{data.featured.desc}</p>
+                   <span className="text-[10px] font-bold uppercase tracking-widest border-b border-white pb-1 group-hover:text-[#CC1414] group-hover:border-[#CC1414] transition-colors">Explore Now</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
     </div>
   );

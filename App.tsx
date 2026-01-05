@@ -23,6 +23,7 @@ import ApplicantDashboard from './components/ApplicantPortal/Dashboard';
 import GeneralUserDashboard from './components/Portal/GeneralUserDashboard';
 import AdminLogin from './components/Portal/AdminLogin';
 import AdminPortal from './components/Portal/AdminPortal';
+import DisclaimerModal from './components/DisclaimerModal'; // Imported DisclaimerModal
 import { contentService } from './services/contentService';
 import { Job, UserProfile } from './types';
 
@@ -35,6 +36,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [applyingFor, setApplyingFor] = useState<Job | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false); // State for disclaimer visibility
   
   const [pendingJobApplication, setPendingJobApplication] = useState<Job | null>(null);
   
@@ -88,6 +90,12 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Disclaimer Check Logic
+    const hasSeenDisclaimer = sessionStorage.getItem('hasAcknowledgedDisclaimer');
+    if (!hasSeenDisclaimer) {
+      setShowDisclaimer(true);
+    }
+
     const handlePopState = () => {
       const path = window.location.pathname;
       const parts = path.split('/').filter(Boolean);
@@ -156,6 +164,11 @@ const App: React.FC = () => {
     setApplyingFor(job);
   };
 
+  const handleDisclaimerAcknowledge = () => {
+    sessionStorage.setItem('hasAcknowledgedDisclaimer', 'true');
+    setShowDisclaimer(false);
+  };
+
   const renderContent = () => {
     if (view.type === 'login') return (
       <AdminLogin 
@@ -211,6 +224,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Disclaimer Overlay */}
+      {showDisclaimer && <DisclaimerModal onAcknowledge={handleDisclaimerAcknowledge} />}
+
       {!['admin', 'login', 'careers', 'jobs', 'dashboard', 'booking'].includes(view.type) && <Navbar onNavigate={navigateTo} />}
       
       {applyingFor && (

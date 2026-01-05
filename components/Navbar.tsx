@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, Search, Globe, User } from 'lucide-react';
-import MegaMenu from './MegaMenu';
+import { Menu, X, Search, Globe, User, Plus, Minus } from 'lucide-react';
+import MegaMenu, { MENU_DATA } from './MegaMenu';
 
 interface NavbarProps {
   onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'login' | 'booking', id?: string) => void;
@@ -11,6 +11,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,15 +33,23 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
   const handleNavClick = (link: any) => {
     setIsOpen(false);
     setActiveMenu(null);
+    setMobileExpanded(null);
+    
     if (link.type === 'thinking') {
       onNavigate('thinking');
     } else if (link.type === 'careers') {
       onNavigate('careers');
     } else if (link.type === 'booking') {
       onNavigate('booking');
+    } else if (link.type === 'practice') {
+      onNavigate('practice', link.id);
+    } else if (link.type === 'page') {
+      onNavigate('page', link.id);
+    } else if (link.type === 'insight') {
+      onNavigate('insight', link.id);
     } else {
       onNavigate('home');
-      if (link.href.startsWith('#')) {
+      if (link.href && link.href.startsWith('#')) {
         setTimeout(() => {
           const target = document.querySelector(link.href);
           if (target) {
@@ -62,6 +71,10 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
         handleNavClick(link);
       }
     }
+  };
+
+  const toggleMobileSubMenu = (name: string) => {
+    setMobileExpanded(mobileExpanded === name ? null : name);
   };
 
   return (
@@ -166,7 +179,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
 
       {/* Side Drawer - Increased z-index to cover navbar */}
       <div className={`fixed top-0 left-0 h-full bg-white z-[60] transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl w-[85%] sm:w-[400px] ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="h-full flex flex-col px-8 py-12 overflow-y-auto">
+        <div className="h-full flex flex-col px-8 py-12 overflow-y-auto custom-scrollbar">
           <button 
             className="absolute top-6 right-6 p-2 text-slate-400 transition-colors hover:text-[#CC1414]"
             onClick={() => setIsOpen(false)}
@@ -182,23 +195,61 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
              </div>
           </div>
 
-          <div className="flex flex-col space-y-6">
-            {navLinks.map((link, idx) => (
-              <div key={link.name} className="flex flex-col">
-                <a
-                  href={link.href}
-                  className={`text-xl font-serif font-medium text-slate-900 group flex justify-between items-center transition-all duration-700 transform ${isOpen ? 'translate-x-0 opacity-100' : '-translate-x-8 opacity-0'}`}
-                  style={{ transitionDelay: `${idx * 100 + 100}ms` }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(link);
-                  }}
-                >
-                  <span className="transition-colors group-hover:text-[#CC1414]">{link.name}</span>
-                  <div className="w-6 h-px bg-slate-100 group-hover:bg-[#CC1414] transition-all duration-500" />
-                </a>
-              </div>
-            ))}
+          <div className="flex flex-col space-y-2">
+            {navLinks.map((link, idx) => {
+              const hasSubMenu = !!MENU_DATA[link.name];
+              const isExpanded = mobileExpanded === link.name;
+              
+              return (
+                <div key={link.name} className="flex flex-col border-b border-slate-50 last:border-0">
+                  <div className="flex items-center justify-between py-4">
+                    <a
+                      href={link.href}
+                      className={`text-xl font-serif font-medium text-slate-900 group flex justify-between items-center transition-colors duration-300 hover:text-[#CC1414] ${isExpanded ? 'text-[#CC1414]' : ''}`}
+                      onClick={(e) => {
+                        if (hasSubMenu) {
+                          e.preventDefault();
+                          toggleMobileSubMenu(link.name);
+                        } else {
+                          e.preventDefault();
+                          handleNavClick(link);
+                        }
+                      }}
+                    >
+                      {link.name}
+                    </a>
+                    {hasSubMenu && (
+                      <button 
+                        onClick={() => toggleMobileSubMenu(link.name)}
+                        className={`p-2 transition-colors ${isExpanded ? 'text-[#CC1414]' : 'text-slate-400 hover:text-[#CC1414]'}`}
+                      >
+                         {isExpanded ? <Minus size={20} /> : <Plus size={20} />}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Mobile Submenu */}
+                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[1000px] opacity-100 mb-6' : 'max-h-0 opacity-0'}`}>
+                    {hasSubMenu && MENU_DATA[link.name].sections.map((section, sIdx) => (
+                       <div key={sIdx} className="pl-4 mb-6">
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{section.title}</p>
+                          <div className="flex flex-col space-y-3 border-l border-slate-100 pl-4">
+                             {section.links.map((subLink, lIdx) => (
+                                <button
+                                   key={lIdx}
+                                   onClick={() => handleNavClick(subLink)}
+                                   className="text-left text-sm font-light text-slate-600 hover:text-[#CC1414] transition-colors"
+                                >
+                                   {subLink.name}
+                                </button>
+                             ))}
+                          </div>
+                       </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

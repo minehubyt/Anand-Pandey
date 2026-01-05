@@ -62,8 +62,6 @@ const generateExecutiveTemplate = (
         .logo-text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 4px; color: ${COLORS.brandRed}; text-transform: uppercase; line-height: 1; display: inline-block; }
         .logo-amp { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; color: ${COLORS.brandRed}; vertical-align: middle; margin: 0 6px; display: inline-block; }
         
-        .accent-line { height: 4px; background-color: ${COLORS.primary}; width: 100%; }
-        
         .overview-box { background-color: #F9FAFB; border-left: 4px solid #000000; padding: 32px; margin: 32px 0; }
         .overview-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: ${COLORS.brandRed}; margin-bottom: 12px; display: block; }
         .overview-content { font-family: 'Georgia', 'Times New Roman', serif; font-style: italic; font-size: 17px; line-height: 1.7; color: #111111; }
@@ -92,25 +90,18 @@ const generateExecutiveTemplate = (
         
         <table class="main-table" align="center">
             
-            <!-- Logo Header (Centered like Portal Login) -->
+            <!-- Logo Header (Left Aligned) -->
             <tr>
-                <td style="padding: 48px 40px 32px 40px; text-align: center; background-color: #ffffff;">
-                    <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                <td style="padding: 48px 40px 32px 40px; text-align: left; background-color: #ffffff;">
+                    <table border="0" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td align="center">
+                            <td align="left">
                                 <span class="logo-text">AK PANDEY</span>
                                 <span class="logo-amp">&</span>
                                 <span class="logo-text">ASSOCIATES</span>
                             </td>
                         </tr>
                     </table>
-                </td>
-            </tr>
-
-            <!-- Red Accent Line -->
-            <tr>
-                <td style="font-size: 0; line-height: 0;">
-                    <div class="accent-line"></div>
                 </td>
             </tr>
 
