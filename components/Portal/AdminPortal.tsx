@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, FileText, Users, MapPin, 
@@ -12,6 +13,7 @@ import {
   UserCheck, GraduationCap, Eye
 } from 'lucide-react';
 import { contentService } from '../../services/contentService';
+import { emailService } from '../../services/emailService';
 import { HeroContent, Insight, Author, Inquiry, OfficeLocation, Job, JobApplication } from '../../types';
 
 interface AdminPortalProps {
@@ -39,6 +41,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeEntity, setActiveEntity] = useState<any>(null);
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
+  const [appActionLoading, setAppActionLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -124,6 +127,31 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
       await contentService.deleteOffice(id);
     } else if (activeTab === 'jobs') {
       await contentService.deleteJob(id);
+    }
+  };
+
+  const handleAppStatusChange = async (status: JobApplication['status']) => {
+    if (!selectedApp) return;
+    setAppActionLoading(true);
+    try {
+      // 1. Update Database
+      await contentService.updateApplicationStatus(selectedApp.id, status);
+      
+      // 2. Send Email Notification
+      await emailService.sendApplicationStatusUpdate({
+        name: selectedApp.data.personal.name,
+        email: selectedApp.data.personal.email,
+        jobTitle: selectedApp.jobTitle,
+        status: status
+      });
+
+      setSelectedApp(null);
+      alert(`Status updated to ${status}. Notification dispatched.`);
+    } catch (err) {
+      console.error("Status Update Failed", err);
+      alert("Failed to update status.");
+    } finally {
+      setAppActionLoading(false);
     }
   };
 
@@ -589,8 +617,20 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                  </div>
 
                  <footer className="px-10 py-8 border-t border-white/5 flex gap-4 bg-slate-50/50">
-                    <button className="flex-1 py-4 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-green-600/20 hover:scale-105 transition-all">Move to Interview Stage</button>
-                    <button className="flex-1 py-4 bg-[#CC1414] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/20 hover:scale-105 transition-all">Authorize Rejection</button>
+                    <button 
+                      onClick={() => handleAppStatusChange('Interview')}
+                      disabled={appActionLoading}
+                      className="flex-1 py-4 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-green-600/20 hover:scale-105 transition-all disabled:opacity-50"
+                    >
+                      {appActionLoading ? 'Processing...' : 'Move to Interview Stage'}
+                    </button>
+                    <button 
+                      onClick={() => handleAppStatusChange('Rejected')}
+                      disabled={appActionLoading}
+                      className="flex-1 py-4 bg-[#CC1414] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/20 hover:scale-105 transition-all disabled:opacity-50"
+                    >
+                      {appActionLoading ? 'Processing...' : 'Authorize Rejection'}
+                    </button>
                     <button onClick={() => setSelectedApp(null)} className="px-10 py-4 bg-white border border-slate-200 text-slate-400 text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all">Close Dossier</button>
                  </footer>
               </div>

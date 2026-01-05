@@ -10,18 +10,19 @@ const ADMIN_EMAIL = 'admin@anandpandey.in';
 
 // --- VISUAL IDENTITY CONSTANTS ---
 const COLORS = {
-  primary: '#CC1414', // Corporate Red
-  brandRed: '#A6192E', // Specific Brand Red from Navbar
+  primary: '#CC1414', // Corporate Red for accents
+  brandRed: '#A6192E', // Deep Red for Logo (Matches Portal)
   black: '#000000',
-  dark: '#0A1931',
+  dark: '#0A1931', // Navy
   text: '#333333',
   bg: '#FFFFFF',
-  gray: '#F4F4F4'
+  panel: '#F8F9FA',
+  border: '#E2E8F0'
 };
 
 /**
- * Generates a high-end, responsive HTML email template
- * Mimics the "Big Law" / Deloitte aesthetic: Serif bold headers, clean layout, "Impact that matters" footer.
+ * Generates a high-end, responsive HTML email template.
+ * Design Philosophy: "Big Law" aesthetic - Minimalist, Serif Typography, Structured Data.
  */
 const generateExecutiveTemplate = (
   headline: string, 
@@ -29,84 +30,148 @@ const generateExecutiveTemplate = (
   introText: string,
   overviewTitle: string,
   overviewBody: string,
-  footerLink: string
+  ctaLink: string = "https://www.thetaxjournal.in",
+  ctaText: string = "ACCESS SECURE PORTAL"
 ) => {
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+      <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${headline}</title>
+      <!--[if mso]>
+      <noscript>
+      <xml>
+      <o:OfficeDocumentSettings>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+      </xml>
+      </noscript>
+      <![endif]-->
       <style>
-        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f2f2f2; -webkit-font-smoothing: antialiased; }
-        .wrapper { width: 100%; background-color: #f2f2f2; padding: 40px 0; }
-        .container { max-width: 640px; margin: 0 auto; background-color: #ffffff; }
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; -webkit-font-smoothing: antialiased; }
+        .wrapper { width: 100%; table-layout: fixed; background-color: #f4f4f4; padding-bottom: 60px; }
+        .main-table { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 640px; border-spacing: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333333; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         
         /* Typography */
-        h1 { font-family: 'Arial', sans-serif; font-weight: 900; font-size: 36px; line-height: 1.1; color: #000000; margin: 0 0 20px 0; letter-spacing: -0.5px; }
-        p { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0; }
+        h1 { font-family: 'Georgia', 'Times New Roman', serif; font-weight: 400; font-size: 32px; line-height: 1.2; color: #111111; margin: 0 0 24px 0; letter-spacing: -0.5px; }
+        p { margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #444444; }
         
-        /* Header */
-        .header { padding: 40px 40px 0 40px; }
+        /* Elements */
+        .logo-text { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 4px; color: ${COLORS.brandRed}; text-transform: uppercase; line-height: 1; display: inline-block; }
+        .logo-amp { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; color: ${COLORS.brandRed}; vertical-align: middle; margin: 0 6px; display: inline-block; }
         
-        /* Content */
-        .content { padding: 0 40px 40px 40px; }
+        .accent-line { height: 4px; background-color: ${COLORS.primary}; width: 100%; }
         
-        /* Engagement Box */
-        .engagement-box { background-color: #F9F9F9; padding: 30px; border-left: 4px solid #000000; margin-top: 30px; }
-        .engagement-title { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px; color: #666666; margin-bottom: 15px; font-weight: 400; }
-        .engagement-text { font-family: 'Georgia', serif; font-style: italic; font-size: 16px; line-height: 1.6; color: #000000; margin: 0; }
+        .overview-box { background-color: #F9FAFB; border-left: 4px solid #000000; padding: 32px; margin: 32px 0; }
+        .overview-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: ${COLORS.brandRed}; margin-bottom: 12px; display: block; }
+        .overview-content { font-family: 'Georgia', 'Times New Roman', serif; font-style: italic; font-size: 17px; line-height: 1.7; color: #111111; }
         
-        /* Footer */
-        .footer { padding: 40px; background-color: #ffffff; border-top: 1px solid #eeeeee; }
-        .tagline { font-family: 'Arial', sans-serif; font-weight: 900; font-size: 18px; color: #000000; margin-bottom: 30px; }
-        .tagline span { vertical-align: super; font-size: 10px; }
-        .footer-text { font-size: 11px; color: #999999; line-height: 1.5; margin-bottom: 10px; }
-        .footer-links { margin-top: 20px; font-size: 11px; font-weight: 700; color: #000000; text-transform: uppercase; letter-spacing: 1px; }
-        .footer-links a { text-decoration: none; color: #000000; margin-right: 15px; }
+        .btn { display: inline-block; padding: 16px 32px; background-color: ${COLORS.dark}; color: #ffffff !important; text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; border-radius: 0; transition: background 0.3s; }
+        
+        .footer { background-color: #000000; padding: 48px 40px; color: #888888; font-size: 12px; line-height: 1.5; text-align: center; }
+        .footer-tagline { color: #ffffff; font-family: 'Georgia', serif; font-size: 20px; font-style: italic; margin-bottom: 24px; display: block; }
+        .footer a { color: #aaaaaa; text-decoration: none; margin: 0 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block; }
+        .footer a:hover { color: #ffffff; }
+
+        @media screen and (max-width: 600px) {
+            .main-table { width: 100% !important; }
+            h1 { font-size: 26px !important; }
+            .wrapper { padding: 0 !important; }
+            .content-cell { padding: 30px 20px !important; }
+            .overview-box { padding: 20px !important; }
+            .logo-text { font-size: 18px !important; letter-spacing: 2px !important; }
+        }
       </style>
     </head>
     <body>
       <div class="wrapper">
-        <div class="container">
-          
-          <div class="header">
-             <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1; margin-bottom: 30px;">
-                <span style="color: ${COLORS.brandRed}; font-size: 20px; font-weight: 600; letter-spacing: 3px;">AK PANDEY</span>
-                <span style="color: ${COLORS.brandRed}; font-size: 12px; font-weight: 400; margin: 0 5px; vertical-align: middle;">&</span>
-                <span style="color: ${COLORS.brandRed}; font-size: 20px; font-weight: 600; letter-spacing: 3px;">ASSOCIATES</span>
-             </div>
-          </div>
-
-          <div class="content">
-            <h1>${headline}</h1>
+        <!-- Spacing Top -->
+        <div style="height: 40px; line-height: 40px; font-size: 0;">&nbsp;</div>
+        
+        <table class="main-table" align="center">
             
-            <p>Hello ${recipientName},</p>
-            <p>${introText}</p>
+            <!-- Logo Header (Centered like Portal Login) -->
+            <tr>
+                <td style="padding: 48px 40px 32px 40px; text-align: center; background-color: #ffffff;">
+                    <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                        <tr>
+                            <td align="center">
+                                <span class="logo-text">AK PANDEY</span>
+                                <span class="logo-amp">&</span>
+                                <span class="logo-text">ASSOCIATES</span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
 
-            <div class="engagement-box">
-               <div class="engagement-title">${overviewTitle}</div>
-               <div class="engagement-text">
-                 "${overviewBody}"
-               </div>
-            </div>
-          </div>
+            <!-- Red Accent Line -->
+            <tr>
+                <td style="font-size: 0; line-height: 0;">
+                    <div class="accent-line"></div>
+                </td>
+            </tr>
 
-          <div class="footer">
-            <div class="tagline">Impact that matters.<span>™</span></div>
-            <div style="height: 1px; width: 100%; background-color: #eeeeee; margin-bottom: 20px;"></div>
-            
-            <p class="footer-text">
-              © 2026 AK Pandey & Associates. AK Pandey refers to one or more of AK Pandey & Associates Limited and its global network of member firms, each of which is a legally separate and independent entity.
-            </p>
-            
-            <div class="footer-links">
-               <a href="${footerLink}">Privacy Notice</a> | 
-               <a href="${footerLink}">Terms of Use</a> | 
-               <a href="${footerLink}">Global Office Directory</a>
-            </div>
-          </div>
+            <!-- Main Content -->
+            <tr>
+                <td class="content-cell" style="padding: 48px 40px 40px 40px;">
+                    <h1>${headline}</h1>
+                    
+                    <p>Hello ${recipientName},</p>
+                    <p style="margin-bottom: 0;">${introText}</p>
+                    
+                    <!-- Structured Overview Box -->
+                    <div class="overview-box">
+                        <span class="overview-label">${overviewTitle}</span>
+                        <div class="overview-content">
+                            "${overviewBody}"
+                        </div>
+                    </div>
 
-        </div>
+                    <p style="font-size: 14px; color: #666666; margin-bottom: 32px;">
+                        This communication serves as a formal acknowledgment. Our strategic team is reviewing the particulars of this engagement.
+                    </p>
+
+                    <!-- CTA Button -->
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                            <td align="center">
+                                <a href="${ctaLink}" class="btn">${ctaText}</a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td class="footer">
+                    <span class="footer-tagline">Impact that matters.™</span>
+                    
+                    <div style="height: 1px; background-color: #333333; margin: 0 0 24px 0;"></div>
+                    
+                    <p style="margin-bottom: 24px; color: #888888;">
+                        © 2026 AK Pandey & Associates. All rights reserved.<br>
+                        High Court Chambers, Shanti Path, New Delhi, 110001
+                    </p>
+                    
+                    <p style="font-size: 10px; color: #555555; margin-bottom: 24px; line-height: 1.4; text-align: justify;">
+                        CONFIDENTIALITY NOTICE: The contents of this email message and any attachments are intended solely for the addressee(s) and may contain confidential and/or privileged information. If you are not the intended recipient, please alert the sender by reply email and delete this message.
+                    </p>
+
+                    <div>
+                        <a href="https://www.thetaxjournal.in/page/privacy">PRIVACY NOTICE</a>
+                        <a href="https://www.thetaxjournal.in/page/terms">TERMS OF USE</a>
+                        <a href="https://www.thetaxjournal.in/locations">GLOBAL DIRECTORY</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Spacing Bottom -->
+        <div style="height: 40px; line-height: 40px; font-size: 0;">&nbsp;</div>
       </div>
     </body>
     </html>
@@ -182,7 +247,7 @@ export const emailService = {
       year: 'numeric'
     });
 
-    const overviewBody = `We confirm that your request for a strategic consultation has been logged in our secure matrix. A Senior Partner has been notified of this engagement. Reference ID: ${uniqueId}. Location: ${branch} Chamber.`;
+    const overviewBody = `We confirm that your request for a strategic consultation has been logged in our secure matrix. A Senior Partner has been notified of this engagement.\n\nReference ID: ${uniqueId}\nLocation: ${branch} Chamber`;
 
     const html = generateExecutiveTemplate(
       "Mandate Authorized",
@@ -190,7 +255,8 @@ export const emailService = {
       `Your appointment at our ${branch} chamber is confirmed for ${formattedDate} at ${time.hour}:${time.minute} ${time.period}.`,
       "Engagement Overview",
       overviewBody,
-      "https://www.thetaxjournal.in"
+      "https://www.thetaxjournal.in/dashboard",
+      "MANAGE APPOINTMENT"
     );
 
     // 1. Send to Client
@@ -218,7 +284,8 @@ export const emailService = {
 
     const introText = `We have successfully received your strategic proposal request regarding <strong>${category}</strong> for <strong>AK PANDEY AND ASSOCIATES</strong>.`;
     
-    const overviewBody = `Dear Sir/Madam, I hope this message finds you well. I am writing to formally enquire about AK Pandey's ${category} services. We are currently evaluating professional audit support for our organization and are keen to understand how AK Pandey can assist us with high-quality, compliant, and value-driven assurance solutions. Specifically, we would appreciate details on the following: Scope and coverage of statutory audit, internal audit, and assurance services. Industry expertise and sector-specific audit experience. Approach to risk assessment, internal controls, and regulatory compliance.`;
+    // Using simple line breaks or <br> in the overview body if needed, but the CSS handles formatting.
+    const overviewBody = `Dear Sir/Madam, I hope this message finds you well. I am writing to formally enquire about AK Pandey's ${category} services. We are currently evaluating professional audit support for our organization and are keen to understand how AK Pandey can assist us with high-quality, compliant, and value-driven assurance solutions. Specifically, we would appreciate details on the following:<br><br>• Scope and coverage of statutory audit, internal audit, and assurance services.<br>• Industry expertise and sector-specific audit experience.<br>• Approach to risk assessment, internal controls, and regulatory compliance.`;
 
     const html = generateExecutiveTemplate(
       "Proposal Transmission Received.",
@@ -226,7 +293,8 @@ export const emailService = {
       introText,
       "Engagement Overview",
       overviewBody,
-      "https://www.thetaxjournal.in"
+      "https://www.thetaxjournal.in/dashboard",
+      "VIEW RFP STATUS"
     );
 
     // 1. Send to Client
@@ -245,12 +313,21 @@ export const emailService = {
   },
 
   /**
-   * Send confirmation for Job Application
+   * Send confirmation for Job Application with detailed summary
    */
   sendApplicationConfirmation: async (data: any) => {
-    const { name, email, jobTitle } = data;
+    const { name, email, jobTitle, formData } = data;
 
-    const overviewBody = `Your credentials for the position of ${jobTitle} have been securely filed in our candidate matrix. The Recruitment Board will review your academic and professional history shortly.`;
+    // Create a rich summary of the submitted data
+    const detailsHtml = `
+      <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-left: 3px solid #000;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;"><strong>Education:</strong><br>${formData?.education || 'N/A'}</p>
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #666;"><strong>Experience:</strong><br>${formData?.experience || 'N/A'}</p>
+        <p style="margin: 0; font-size: 14px; color: #666;"><strong>Interests:</strong><br>${formData?.interests || 'N/A'}</p>
+      </div>
+    `;
+
+    const overviewBody = `Your credentials for the position of ${jobTitle} have been securely filed in our candidate matrix. The Recruitment Board will review your academic and professional history shortly.<br><br><strong>Submitted Dossier Summary:</strong>${detailsHtml}`;
 
     const html = generateExecutiveTemplate(
       "Dossier Filed Successfully.",
@@ -258,7 +335,8 @@ export const emailService = {
       `We acknowledge receipt of your application for the position of <strong>${jobTitle}</strong>.`,
       "Candidate Status",
       overviewBody,
-      "https://www.thetaxjournal.in/careers"
+      "https://www.thetaxjournal.in/dashboard",
+      "CHECK APPLICATION STATUS"
     );
 
     // 1. Send to Candidate
@@ -272,7 +350,47 @@ export const emailService = {
     await emailService.send(
       ADMIN_EMAIL,
       `NEW APPLICATION: ${jobTitle}`,
-      `Applicant: ${name}<br>Email: ${email}`
+      `Applicant: ${name}<br>Email: ${email}<br><br><strong>Education:</strong> ${formData?.education}<br><strong>Experience:</strong> ${formData?.experience}`
     );
+  },
+
+  /**
+   * Send Status Update Email (Interview / Rejection)
+   */
+  sendApplicationStatusUpdate: async (data: any) => {
+    const { name, email, jobTitle, status } = data;
+
+    let subject = "";
+    let headline = "";
+    let introText = "";
+    let overviewBody = "";
+    let ctaText = "VIEW DASHBOARD";
+    
+    if (status === 'Interview') {
+       subject = `Interview Invitation: ${jobTitle}`;
+       headline = "Candidate Shortlisted";
+       introText = `Following a review of your dossier, we are pleased to invite you to the interview stage for <strong>${jobTitle}</strong>.`;
+       overviewBody = `Your profile has been flagged for potential strategic alignment with our firm's values. A member of our Recruitment Board will contact you within 24 hours to schedule the formal interaction. Please ensure your documentation is ready for verification.`;
+    } else if (status === 'Rejected') {
+       subject = `Application Status Update: ${jobTitle}`;
+       headline = "Recruitment Board Decision";
+       introText = `We appreciate the time you invested in applying for the <strong>${jobTitle}</strong> position.`;
+       overviewBody = `After careful consideration of your credentials against our current strategic requirements, we have decided not to proceed with your application at this time. We will keep your dossier in our secure matrix for future opportunities that align with your expertise.`;
+       ctaText = "VIEW OTHER ROLES";
+    }
+
+    if (subject) {
+      const html = generateExecutiveTemplate(
+        headline,
+        name,
+        introText,
+        "Status Update",
+        overviewBody,
+        "https://www.thetaxjournal.in/dashboard",
+        ctaText
+      );
+
+      await emailService.send(email, subject, html);
+    }
   }
 };

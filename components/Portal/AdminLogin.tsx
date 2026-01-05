@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
-import { X, Shield, UserPlus, LogIn, Loader2 } from 'lucide-react';
+import { X, Shield, UserPlus, LogIn, Loader2, KeyRound, Mail } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup, 
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { auth, googleProvider } from '../../firebase';
 import { contentService } from '../../services/contentService';
@@ -19,10 +21,12 @@ interface AdminLoginProps {
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole = 'general' }) => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   const getFriendlyErrorMessage = (code: string) => {
@@ -42,6 +46,23 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
     }
   };
 
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMsg("RESET LINK DISPATCHED. PLEASE CHECK YOUR SECURE INBOX.");
+      setTimeout(() => setShowForgotPassword(false), 3000);
+    } catch (err: any) {
+      setError(getFriendlyErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -57,6 +78,9 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
         const user = userCredential.user;
         
         await updateProfile(user, { displayName: name });
+        
+        // Send Verification Email
+        await sendEmailVerification(user);
 
         const role = isAdminEmail ? 'admin' : intendedRole;
 
@@ -67,7 +91,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
           role: role as 'applicant' | 'general' | 'admin',
           createdAt: new Date().toISOString()
         });
-
+        
+        alert("Verification Protocol Initiated: A secure link has been sent to your email. Please verify your identity before accessing the matrix.");
         onLogin();
       } else {
         try {
@@ -133,6 +158,35 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
     }
   };
 
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6 overflow-hidden relative">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400')] bg-cover bg-center opacity-10 blur-sm scale-105" />
+        <div className="relative z-10 w-full max-w-lg bg-white p-10 lg:p-14 shadow-2xl animate-reveal-up rounded-sm">
+           <button onClick={() => setShowForgotPassword(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-[#CC1414] transition-colors"><X className="w-6 h-6"/></button>
+           <div className="text-center mb-10">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-[#CC1414]"><KeyRound size={32}/></div>
+              <h3 className="text-2xl font-serif text-slate-900 mb-2">Reset Secure Key</h3>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Enter your institutional email to receive a recovery link.</p>
+           </div>
+           <form onSubmit={handlePasswordReset} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Email Address</label>
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm" placeholder="example@email.com" />
+              </div>
+              {error && <p className="text-[11px] text-red-600 font-bold uppercase tracking-wider text-center bg-red-50 p-4 border border-red-100 animate-reveal-up">{error}</p>}
+              {successMsg && <p className="text-[11px] text-green-600 font-bold uppercase tracking-wider text-center bg-green-50 p-4 border border-green-100 animate-reveal-up">{successMsg}</p>}
+              <button type="submit" disabled={loading} className="w-full py-5 bg-slate-900 text-white text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-[#CC1414] transition-all flex items-center justify-center gap-4 shadow-xl disabled:opacity-50 rounded-sm">
+                {loading ? <Loader2 className="animate-spin" size={16}/> : <Mail size={16}/>}
+                {loading ? 'DISPATCHING...' : 'SEND RESET LINK'}
+              </button>
+              <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Return to Login</button>
+           </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6 overflow-hidden relative">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400')] bg-cover bg-center opacity-10 blur-sm scale-105 animate-scale-out" />
@@ -187,7 +241,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Secure Key</label>
+            <div className="flex justify-between items-center">
+               <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Secure Key</label>
+               {!isSignUp && (
+                 <button type="button" onClick={() => setShowForgotPassword(true)} className="text-[9px] font-bold tracking-widest uppercase text-[#CC1414] hover:text-slate-900 transition-colors">Forgot Key?</button>
+               )}
+            </div>
             <input 
               type="password"
               required

@@ -81,11 +81,12 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
     try {
       await contentService.submitApplication(app);
       
-      // Trigger Strategic Email Communication (Simulated to avoid CORS)
+      // Trigger Strategic Email Communication with FULL details
       await emailService.sendApplicationConfirmation({
         name: formData.name,
         email: formData.email,
-        jobTitle: job.title
+        jobTitle: job.title,
+        formData: formData // Passing full data for email body
       });
       
       setLoading(false);
