@@ -30,13 +30,35 @@ export interface Author {
   qualifications?: string;
 }
 
-export interface Event {
+export interface Job {
   id: string;
   title: string;
-  date: string;
-  desc: string;
-  image: string;
-  location?: string;
+  department: 'Litigation' | 'Corporate' | 'Support' | 'Internship';
+  location: string;
+  description: string;
+  postedDate: string;
+  status: 'active' | 'closed';
+}
+
+export interface JobApplication {
+  id: string;
+  jobId: string;
+  userId: string;
+  jobTitle: string;
+  status: 'Received' | 'Under Review' | 'Interview' | 'Offered' | 'Rejected';
+  submittedDate: string;
+  data: {
+    personal: {
+      name: string;
+      email: string;
+      mobile: string;
+      photo: string;
+    };
+    education: string;
+    experience: string;
+    interests: string;
+    resumeUrl: string;
+  };
 }
 
 export interface Insight {
@@ -46,16 +68,18 @@ export interface Insight {
   title: string;
   date: string;
   desc: string;
-  image: string; // Thumbnail
+  image: string;
   bannerImage?: string;
   pdfUrl?: string;
   audioUrl?: string;
   season?: string;
   episode?: string;
   authorId?: string;
-  content?: string; // HTML or structured JSON for rich text
+  content?: string;
   isFeatured?: boolean;
-  featuredColor?: string; // For the news carousel background
+  showInHero?: boolean;
+  featuredColor?: string;
+  featuredLabel?: string;
 }
 
 export interface HeroContent {
@@ -69,6 +93,7 @@ export interface HeroContent {
 
 export interface Inquiry {
   id: string;
+  userId?: string;
   type: 'rfp' | 'contact' | 'appointment';
   name: string;
   email: string;
@@ -76,4 +101,12 @@ export interface Inquiry {
   status: 'new' | 'reviewed' | 'archived';
   uniqueId: string;
   details: any;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  name: string;
+  role: 'applicant' | 'general' | 'admin';
+  createdAt: string;
 }

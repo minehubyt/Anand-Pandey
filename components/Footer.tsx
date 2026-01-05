@@ -36,7 +36,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li><button onClick={() => { onNavigate('home'); setTimeout(() => document.getElementById('services')?.scrollIntoView({behavior:'smooth'}), 100); }} className="hover:text-white transition-colors">Our Practices</button></li>
               <li><button onClick={() => onNavigate('page', 'leadership')} className="hover:text-white transition-colors">About AK Pandey</button></li>
               <li><button onClick={() => { onNavigate('home'); setTimeout(() => document.getElementById('locations')?.scrollIntoView({behavior:'smooth'}), 100); }} className="hover:text-white transition-colors">Locations</button></li>
-              <li><button onClick={() => { onNavigate('home'); setTimeout(() => document.getElementById('appointments')?.scrollIntoView({behavior:'smooth'}), 100); }} className="hover:text-white transition-colors">Book Consultation</button></li>
+              <li><button onClick={() => { onNavigate('booking'); }} className="hover:text-white transition-colors">Book Consultation</button></li>
             </ul>
           </div>
 

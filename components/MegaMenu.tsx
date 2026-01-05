@@ -4,12 +4,12 @@ import React from 'react';
 interface MegaMenuProps {
   activeMenu: string | null;
   onClose: () => void;
-  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice', id?: string) => void;
+  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers', id?: string) => void;
 }
 
 const MENU_DATA: Record<string, {
-  sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice'; id: string; href?: string }[] }[];
-  featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice'; id: string };
+  sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers'; id: string; href?: string }[] }[];
+  featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers'; id: string };
 }> = {
   'Who we Are': {
     sections: [
@@ -94,16 +94,16 @@ const MENU_DATA: Record<string, {
       {
         title: 'OPPORTUNITIES',
         links: [
-          { name: 'Law Students', type: 'page', id: 'careers-students' },
-          { name: 'Experienced Lawyers', type: 'page', id: 'careers-exp' },
-          { name: 'Staff Roles', type: 'page', id: 'careers-staff' },
+          { name: 'Law Students', type: 'careers', id: 'careers-students' },
+          { name: 'Experienced Lawyers', type: 'careers', id: 'careers-exp' },
+          { name: 'Staff Roles', type: 'careers', id: 'careers-staff' },
         ]
       },
       {
         title: 'LIFE AT THE FIRM',
         links: [
-          { name: 'Culture & Mentorship', type: 'page', id: 'culture' },
-          { name: 'Professional Development', type: 'page', id: 'development' },
+          { name: 'Culture & Mentorship', type: 'careers', id: 'culture' },
+          { name: 'Professional Development', type: 'careers', id: 'development' },
         ]
       }
     ],
@@ -111,7 +111,7 @@ const MENU_DATA: Record<string, {
       title: 'Join Our Legacy',
       desc: 'We are always looking for driven, exceptional legal talent to join our chambers.',
       image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=800',
-      type: 'page',
+      type: 'careers',
       id: 'careers-exp'
     }
   },

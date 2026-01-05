@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Send, FileUp, CheckCircle, Info, ChevronRight, ChevronLeft, Shield, Clock, Award } from 'lucide-react';
+import { emailService } from '../services/emailService';
 
 interface RFPPageProps {
   onBack: () => void;
@@ -18,6 +19,18 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [animationClass, setAnimationClass] = useState('animate-fade-in-up');
+  
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    organization: '',
+    industry: 'Technology & AI',
+    spend: 'Undisclosed',
+    category: 'M&A Advisory',
+    summary: ''
+  });
 
   // Trigger animation reset when step changes
   useEffect(() => {
@@ -38,14 +51,18 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    // Trigger Strategic Email Communication
+    await emailService.sendRFPConfirmation(formData);
+    
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 2000);
+    }, 1500);
   };
 
   if (submitted) {
@@ -59,7 +76,7 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
           </div>
           <h1 className="text-4xl md:text-6xl font-serif text-slate-900 mb-8 leading-tight">Engagement Initiated</h1>
           <p className="text-xl md:text-2xl text-slate-600 font-light mb-16 leading-relaxed max-w-2xl mx-auto">
-            Your Request for Proposal has been routed to our Senior Partners. A strategic advisor will be assigned to your case within the next business cycle.
+            Your Request for Proposal has been routed to our Senior Partners and a confirmation email has been dispatched. A strategic advisor will be assigned to your case within the next business cycle.
           </p>
           <button 
             onClick={onBack}
@@ -140,19 +157,19 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">First Name *</label>
-                          <input required type="text" className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="John" />
+                          <input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="John" />
                         </div>
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Last Name *</label>
-                          <input required type="text" className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="Doe" />
+                          <input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="Doe" />
                         </div>
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Institutional Email *</label>
-                          <input required type="email" className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="john.doe@company.com" />
+                          <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="john.doe@company.com" />
                         </div>
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Direct Phone</label>
-                          <input type="tel" className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="+1 (555) 000-0000" />
+                          <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="+1 (555) 000-0000" />
                         </div>
                       </div>
                     </div>
@@ -167,11 +184,11 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
                         <div className="group md:col-span-2 space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Organization Name *</label>
-                          <input required type="text" className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="Enterprise Holdings Inc." />
+                          <input required type="text" value={formData.organization} onChange={e => setFormData({...formData, organization: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-xl text-slate-900 bg-transparent" placeholder="Enterprise Holdings Inc." />
                         </div>
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Industry Vertical</label>
-                          <select className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-600 bg-transparent appearance-none cursor-pointer">
+                          <select value={formData.industry} onChange={e => setFormData({...formData, industry: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-600 bg-transparent appearance-none cursor-pointer">
                             <option>Technology & AI</option>
                             <option>Finance & Fintech</option>
                             <option>Infrastructure & Real Estate</option>
@@ -181,7 +198,7 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                         </div>
                         <div className="group space-y-3">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Annual Legal Spend (Estimated)</label>
-                          <select className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-600 bg-transparent appearance-none cursor-pointer">
+                          <select value={formData.spend} onChange={e => setFormData({...formData, spend: e.target.value})} className="w-full border-b border-slate-200 py-4 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-600 bg-transparent appearance-none cursor-pointer">
                             <option>Undisclosed</option>
                             <option>Under $1M</option>
                             <option>$1M - $5M</option>
@@ -205,7 +222,7 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-2">
                             {['M&A Advisory', 'Tax Strategy', 'Dispute Resolution', 'IP Protection', 'Regulatory', 'General Counsel'].map(opt => (
                               <label key={opt} className="flex items-center space-x-4 cursor-pointer group/label p-4 border border-slate-50 hover:border-[#CC1414]/20 transition-all rounded-sm">
-                                <input type="radio" name="category" className="w-5 h-5 accent-[#CC1414]" />
+                                <input type="radio" name="category" checked={formData.category === opt} onChange={() => setFormData({...formData, category: opt})} className="w-5 h-5 accent-[#CC1414]" />
                                 <span className="text-[16px] font-light text-slate-600 group-hover/label:text-slate-900">{opt}</span>
                               </label>
                             ))}
@@ -213,7 +230,7 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                         </div>
                         <div className="group space-y-4">
                           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 group-focus-within:text-[#CC1414] transition-colors">Mandate Summary *</label>
-                          <textarea required rows={6} className="w-full border border-slate-100 p-8 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-900 bg-slate-50/50 resize-none shadow-inner" placeholder="Provide a high-level summary of the required services and timeline..."></textarea>
+                          <textarea required value={formData.summary} onChange={e => setFormData({...formData, summary: e.target.value})} rows={6} className="w-full border border-slate-100 p-8 focus:outline-none focus:border-[#CC1414] transition-colors font-light text-lg text-slate-900 bg-slate-50/50 resize-none shadow-inner" placeholder="Provide a high-level summary of the required services and timeline..."></textarea>
                         </div>
                       </div>
                     </div>

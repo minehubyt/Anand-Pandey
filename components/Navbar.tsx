@@ -4,7 +4,7 @@ import { Menu, X, Search, Globe, User } from 'lucide-react';
 import MegaMenu from './MegaMenu';
 
 interface NavbarProps {
-  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'login', id?: string) => void;
+  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'login' | 'booking', id?: string) => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
@@ -15,17 +15,20 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
     { name: 'What we Do', href: '#services', type: 'home' },
     { name: 'Who we Are', href: '#about', type: 'home' },
     { name: 'Our Thinking', href: '#insights', type: 'thinking' },
-    { name: 'Career', href: '#careers', type: 'home' },
+    { name: 'Career', href: '#careers', type: 'careers' },
     { name: 'Offices', href: '#locations', type: 'home' },
-    { name: 'Connect', href: '#appointments', type: 'home' }
+    { name: 'Connect', href: '#booking', type: 'booking' }
   ];
 
-  // Close menu on navigation
   const handleNavClick = (link: any) => {
     setIsOpen(false);
     setActiveMenu(null);
     if (link.type === 'thinking') {
       onNavigate('thinking');
+    } else if (link.type === 'careers') {
+      onNavigate('careers');
+    } else if (link.type === 'booking') {
+      onNavigate('booking');
     } else {
       onNavigate('home');
       if (link.href.startsWith('#')) {
@@ -43,8 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
     if (activeMenu === name) {
       setActiveMenu(null);
     } else {
-      // Links that have sub-menus (MegaMenu)
-      const hasSubMenu = ['What we Do', 'Who we Are', 'Our Thinking', 'Career', 'Offices', 'Connect'].includes(name);
+      const hasSubMenu = ['What we Do', 'Who we Are', 'Our Thinking', 'Offices', 'Connect'].includes(name);
       if (hasSubMenu) {
         setActiveMenu(name);
       } else {
@@ -91,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
                       e.preventDefault();
                       toggleMenu(link.name, link);
                     }}
-                    className={`text-[10px] xl:text-[11px] font-bold tracking-[0.15em] uppercase transition-all whitespace-nowrap py-4 border-b-2 ${activeMenu === link.name ? 'text-[#CC1414] border-[#CC1414]' : 'text-slate-800 border-transparent'}`}
+                    className={`text-[13px] xl:text-[14px] font-bold tracking-[0.12em] uppercase transition-all whitespace-nowrap py-4 border-b-2 ${activeMenu === link.name ? 'text-[#CC1414] border-[#CC1414]' : 'text-slate-800 border-transparent'}`}
                   >
                     {link.name}
                   </a>
@@ -138,7 +140,6 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
         onNavigate={onNavigate as any} 
       />
 
-      {/* Backdrop for the side drawer */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 transition-opacity duration-500"
@@ -146,7 +147,6 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
         />
       )}
 
-      {/* Side Drawer */}
       <div className={`fixed top-0 left-0 h-full bg-white z-40 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl w-[85%] sm:w-[400px] md:w-[450px] lg:w-[500px] ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-full flex flex-col px-10 py-20 lg:px-16 lg:py-24 overflow-y-auto">
           <button 
@@ -196,7 +196,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
               </div>
               <div className="pt-8">
                 <button 
-                  onClick={() => { onNavigate('home'); setIsOpen(false); }} 
+                  onClick={() => { onNavigate('booking'); setIsOpen(false); }} 
                   className="w-full bg-slate-900 text-white px-8 py-5 text-[11px] font-bold tracking-[0.3em] uppercase shadow-xl transition-all"
                 >
                   SECURE CONSULTATION
