@@ -41,7 +41,17 @@ const App: React.FC = () => {
   const viewRef = useRef(view);
   useEffect(() => { viewRef.current = view; }, [view]);
 
-  const createSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  // Robust slug generation
+  const createSlug = (text: string) => {
+    if (!text) return '';
+    return text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')     // Replace spaces with -
+      .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+      .replace(/\-\-+/g, '-');  // Replace multiple - with single -
+  };
 
   const navigateTo = (type: ViewType, id?: string, title?: string) => {
     if (view.type === type && view.id === id) return;
@@ -68,8 +78,10 @@ const App: React.FC = () => {
     window.history.pushState({ type, id }, '', path);
 
     setTimeout(() => {
-      // Use slug as ID if title is present to allow lookup by slug in components
-      setView({ type, id: (type === 'insight' && title) ? createSlug(title) : id });
+      // Prioritize using the specific ID if available for robust internal navigation
+      // Fallback to slug/id logic only if ID is missing (unlikely in internal nav)
+      setView({ type, id: id });
+      
       window.scrollTo({ top: 0, behavior: 'instant' });
       setTimeout(() => setIsTransitioning(false), 100);
     }, 600);

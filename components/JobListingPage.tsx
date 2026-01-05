@@ -26,17 +26,18 @@ const JobListingPage: React.FC<JobListingPageProps> = ({ onBack, onApply }) => {
 
   return (
     <div className="bg-white min-h-screen pt-20">
-      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-20 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-8">
+      {/* Standardized Sleek Header */}
+      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-6">
           <button onClick={onBack} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors">
-             <Menu className="w-6 h-6" />
+             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[18px]">
+          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[13px] md:text-[15px]">
              AK PANDEY CAREERS
           </div>
         </div>
-        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[16px]">
-           AK PANDEY <span className="text-[12px] mx-1">&</span> ASSOCIATES
+        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[11px] md:text-[13px] hidden sm:flex">
+           AK PANDEY <span className="text-[9px] md:text-[10px] mx-1">&</span> ASSOCIATES
         </div>
       </header>
 

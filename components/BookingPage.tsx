@@ -67,7 +67,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack }) => {
         }
       });
       
-      // Trigger Strategic Email Communication
+      // Trigger Strategic Email Communication (Simulated to avoid CORS)
       await emailService.sendBookingConfirmation({
         ...bookingData,
         uniqueId
@@ -114,17 +114,17 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack }) => {
 
   return (
     <div className="bg-[#F4F7FE] min-h-screen pt-20 pb-20 font-sans">
-      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-20 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-8">
+      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-6">
           <button onClick={onBack} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors">
-             <ArrowLeft className="w-6 h-6" />
+             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[14px] md:text-[18px]">
+          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[13px] md:text-[15px]">
              STRATEGIC INTAKE
           </div>
         </div>
-        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[12px] md:text-[16px]">
-           AK PANDEY <span className="text-[10px] md:text-[12px] mx-1">&</span> ASSOCIATES
+        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[11px] md:text-[13px] hidden sm:flex">
+           AK PANDEY <span className="text-[9px] md:text-[10px] mx-1">&</span> ASSOCIATES
         </div>
       </header>
 

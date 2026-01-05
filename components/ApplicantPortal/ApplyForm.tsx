@@ -81,7 +81,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
     try {
       await contentService.submitApplication(app);
       
-      // Trigger Strategic Email Communication
+      // Trigger Strategic Email Communication (Simulated to avoid CORS)
       await emailService.sendApplicationConfirmation({
         name: formData.name,
         email: formData.email,
@@ -101,19 +101,19 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-white overflow-y-auto no-scrollbar font-sans">
-      <header className="fixed top-0 w-full z-[110] bg-white border-b border-slate-100 h-20 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <button onClick={onClose} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors"><X size={24}/></button>
+      <header className="fixed top-0 w-full z-[110] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <button onClick={onClose} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors"><X size={20}/></button>
           <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-400">APPLYING FOR: <span className="text-slate-900">{job.title.toUpperCase()}</span></span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
            {slides.map((s, idx) => (
-             <div key={s} className={`w-2 h-2 rounded-full transition-all duration-500 ${idx <= currentIndex ? 'bg-[#CC1414] w-6' : 'bg-slate-100'}`} />
+             <div key={s} className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${idx <= currentIndex ? 'bg-[#CC1414] w-4' : 'bg-slate-100'}`} />
            ))}
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 pt-40 pb-20">
+      <div className="max-w-4xl mx-auto px-6 pt-32 pb-20">
         {slide === 'intro' && (
           <div className="animate-reveal-up text-center">
             <h2 className="text-6xl font-serif text-slate-900 mb-8">Begin Your Application</h2>
@@ -229,7 +229,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
         )}
 
         {slide !== 'intro' && (
-          <div className="fixed bottom-0 left-0 w-full p-8 bg-white/80 backdrop-blur-md border-t border-slate-100 z-[120]">
+          <div className="fixed bottom-0 left-0 w-full p-6 md:p-8 bg-white/80 backdrop-blur-md border-t border-slate-100 z-[120]">
              <div className="max-w-4xl mx-auto flex justify-between items-center">
                 <button 
                   onClick={() => setSlide(slides[currentIndex - 1])}
@@ -241,7 +241,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                   <button 
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="px-16 py-5 bg-[#CC1414] text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:scale-105 transition-all shadow-2xl flex items-center gap-3"
+                    className="px-12 py-5 bg-[#CC1414] text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:scale-105 transition-all shadow-2xl flex items-center gap-3"
                   >
                      {loading ? <Loader2 className="animate-spin" size={18}/> : <CheckCircle size={18}/>}
                      AUTHORIZE SUBMISSION
@@ -249,7 +249,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                 ) : (
                   <button 
                     onClick={() => setSlide(slides[currentIndex + 1])}
-                    className="px-16 py-5 bg-slate-900 text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:bg-[#CC1414] transition-all flex items-center gap-3 shadow-xl"
+                    className="px-12 py-5 bg-slate-900 text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:bg-[#CC1414] transition-all flex items-center gap-3 shadow-xl"
                   >
                      Next Stage <ChevronRight size={16}/>
                   </button>

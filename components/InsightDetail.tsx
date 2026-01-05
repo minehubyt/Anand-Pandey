@@ -14,15 +14,24 @@ const InsightDetail: React.FC<InsightDetailProps> = ({ id, onBack }) => {
   const [author, setAuthor] = useState<Author | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to match slugs if ID is actually a slug from the URL
-  const createSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  // Consistent slug generation
+  const createSlug = (text: string) => {
+    if (!text) return '';
+    return text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-');
+  };
 
   useEffect(() => {
     if (!id) return;
     
     setLoading(true);
     const unsub = contentService.subscribeInsights((allInsights) => {
-      // Find by ID OR by Title Slug (for clean URLs)
+      // Find by Exact ID OR by Title Slug (for clean URLs)
       const found = allInsights.find(i => i.id === id || createSlug(i.title) === id);
       
       if (found) {
@@ -44,16 +53,16 @@ const InsightDetail: React.FC<InsightDetailProps> = ({ id, onBack }) => {
   }, [id]);
 
   if (loading) return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <RefreshCw className="w-12 h-12 animate-spin text-slate-100" />
+    <div className="min-h-screen bg-white flex items-center justify-center pt-20">
+      <RefreshCw className="w-12 h-12 animate-spin text-slate-200" />
     </div>
   );
 
   if (!insight) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center pt-32">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center pt-40 animate-fade-in">
       <h2 className="text-4xl font-serif text-slate-900 mb-6">Mandate Not Found</h2>
       <p className="text-slate-500 mb-12">The dossier you are looking for does not match our current database records.</p>
-      <button onClick={onBack} className="px-10 py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest">RETURN TO THINKING</button>
+      <button onClick={onBack} className="px-10 py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-[#CC1414] transition-colors">RETURN TO THINKING</button>
     </div>
   );
 

@@ -32,15 +32,15 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pt-20 font-sans">
-      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-20 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <button onClick={onNavigateHome} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors"><Menu size={24}/></button>
-          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[18px]">CLIENT CONSOLE</div>
-        </div>
+      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between">
         <div className="flex items-center gap-6">
-           <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors"><Bell size={20}/></button>
-           <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold font-serif shadow-lg">{auth.currentUser?.email?.[0].toUpperCase()}</div>
-           <button onClick={onLogout} className="p-2 text-slate-400 hover:text-[#CC1414] transition-colors"><LogOut size={20}/></button>
+          <button onClick={onNavigateHome} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors"><Menu size={20}/></button>
+          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[13px] md:text-[15px]">CLIENT CONSOLE</div>
+        </div>
+        <div className="flex items-center gap-4 md:gap-6">
+           <button className="p-1 text-slate-400 hover:text-slate-900 transition-colors"><Bell size={18}/></button>
+           <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold font-serif shadow-lg">{auth.currentUser?.email?.[0].toUpperCase()}</div>
+           <button onClick={onLogout} className="p-1 text-slate-400 hover:text-[#CC1414] transition-colors"><LogOut size={18}/></button>
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChevronRight, Users, Globe, Award, Heart, Zap, Menu, Search, User } from 'lucide-react';
+import { ChevronRight, Users, Globe, Award, Menu } from 'lucide-react';
 
 interface CareersPageProps {
   onBack: () => void;
@@ -12,23 +12,23 @@ const CareersPage: React.FC<CareersPageProps> = ({ onBack, onNavigate }) => {
     <div className="animate-page-fade bg-white min-h-screen font-sans">
       
       {/* Precision Navigation Header */}
-      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-20 px-6 md:px-12 flex items-center justify-between">
-        <div className="flex items-center gap-8 md:gap-12">
+      <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between">
+        <div className="flex items-center gap-6">
           <button onClick={onBack} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors">
-             <Menu className="w-6 h-6" />
+             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[14px] md:text-[18px]">
+          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[13px] md:text-[15px]">
              AK PANDEY CAREERS
           </div>
         </div>
         
-        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[12px] md:text-[16px]">
-           <span>AK PANDEY <span className="text-[10px] md:text-[12px] mx-1">&</span> ASSOCIATES</span>
+        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[11px] md:text-[13px] hidden sm:flex">
+           <span>AK PANDEY <span className="text-[9px] md:text-[10px] mx-1">&</span> ASSOCIATES</span>
         </div>
       </header>
 
       {/* High-Impact Hero Section */}
-      <div className="relative h-screen min-h-[700px] w-full overflow-hidden flex flex-col pt-20 bg-slate-50">
+      <div className="relative h-screen min-h-[700px] w-full overflow-hidden flex flex-col pt-16 bg-slate-50">
         {/* Background Layer */}
         <div className="absolute inset-0 z-0">
           <img 
