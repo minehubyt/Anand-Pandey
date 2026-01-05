@@ -11,8 +11,24 @@ const ADMIN_EMAIL = 'admin@anandpandey.in';
 export const emailService = {
   /**
    * Sends an email by calling the Vercel Serverless Function.
+   * On Localhost, it simulates the send to prevent 404 errors.
    */
   send: async (to: string, subject: string, body: string) => {
+    // Detection for local development environment
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isLocal) {
+      console.groupCollapsed(`%c[DEV MODE] Email Simulation: ${subject}`, 'color: #CC1414; font-weight: bold;');
+      console.log('To:', to);
+      console.log('Subject:', subject);
+      console.log('Body:', body);
+      console.groupEnd();
+      
+      // Simulate network delay for realistic UI feedback
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return true;
+    }
+
     try {
       const response = await fetch('/api/send', {
         method: 'POST',
@@ -31,6 +47,8 @@ export const emailService = {
       } else {
         const errorData = await response.json();
         console.error('Email Transmission Error:', errorData);
+        // Even if email fails in production, we might want to return true to not block the UI, 
+        // depending on strictness. For now, returning false to alert user.
         return false;
       }
     } catch (error) {
