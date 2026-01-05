@@ -21,6 +21,7 @@ import JobListingPage from './components/JobListingPage';
 import ApplyForm from './components/ApplicantPortal/ApplyForm';
 import ApplicantDashboard from './components/ApplicantPortal/Dashboard';
 import GeneralUserDashboard from './components/Portal/GeneralUserDashboard';
+import PremierClientDashboard from './components/Portal/PremierClientDashboard';
 import AdminLogin from './components/Portal/AdminLogin';
 import AdminPortal from './components/Portal/AdminPortal';
 import DisclaimerModal from './components/DisclaimerModal';
@@ -190,6 +191,9 @@ const App: React.FC = () => {
     }
     
     if (view.type === 'dashboard') {
+      if (userProfile?.role === 'premier') {
+        return <PremierClientDashboard userProfile={userProfile} onLogout={() => auth.signOut()} onNavigateHome={() => navigateTo('home')} />;
+      }
       if (userProfile?.role === 'applicant') {
         return <ApplicantDashboard onLogout={() => auth.signOut()} onNavigateHome={() => navigateTo('home')} />;
       }

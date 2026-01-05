@@ -14,7 +14,7 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { HeroContent, Insight, Author, OfficeLocation, Inquiry, Job, JobApplication, UserProfile } from '../types';
+import { HeroContent, Insight, Author, OfficeLocation, Inquiry, Job, JobApplication, UserProfile, ClientDocument } from '../types';
 
 const COLLECTIONS = {
   HERO: 'hero',
@@ -25,7 +25,8 @@ const COLLECTIONS = {
   EVENTS: 'events',
   JOBS: 'jobs',
   APPLICATIONS: 'applications',
-  USERS: 'users'
+  USERS: 'users',
+  DOCUMENTS: 'client_docs'
 };
 
 export const contentService = {
@@ -142,13 +143,88 @@ export const contentService = {
   },
 
   saveUserProfile: async (profile: UserProfile) => {
-    await setDoc(doc(db, COLLECTIONS.USERS, profile.uid), profile);
+    // If Admin invites a premier client, we save it directly. 
+    // If a user signs up, we merge to ensure we don't overwrite admin-set roles if they existed (pre-seeding).
+    await setDoc(doc(db, COLLECTIONS.USERS, profile.uid), profile, { merge: true });
   },
 
   getUserProfile: async (uid: string): Promise<UserProfile | null> => {
     const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
     return snap.exists() ? snap.data() as UserProfile : null;
   },
+
+  // --- CRM & ADMIN CLIENT MANAGEMENT ---
+
+  // Invite/Create a Premier Client (Admin Function)
+  invitePremierClient: async (clientData: { email: string, name: string, companyName: string, mobile: string }) => {
+    // We create a profile document keyed by Email (temporary) or a placeholder ID if they haven't signed up yet.
+    // However, best practice in Firebase without Admin SDK is:
+    // 1. Create a doc in 'users' with a generated ID (or email as ID if unique).
+    // 2. When they actually sign up/login, we might need to migrate this data or they need to use the exact email.
+    // STRATEGY: We will store "Pre-approved" emails in a separate collection or query users by email.
+    // SIMPLEST: Admin manually creates the record. 
+    
+    // We'll use a unique ID generator for the placeholder until they claim it, or just use email as ID if possible (not recommended for Auth UID).
+    // Better: We assume the Admin creates the profile, and when the user logs in via Google/Email, 
+    // we check if their email matches an existing 'premier' profile setup.
+    
+    // For this specific app, we will use a "Pre-Invite" logic where we save the profile.
+    // Since we don't have the UID yet, we'll index by Email in a separate 'invitations' way or just rely on the user claiming it.
+    
+    // ACTUALLY: Let's create a User Profile with a custom ID (e.g., email-slug) and when they auth, we merge.
+    // But Auth UID is different. 
+    // Solution: We will query the 'users' collection by 'email' on login.
+    
+    // So here, we just add a document to 'users' but since we don't know the UID, we might need a workaround.
+    // Workaround: We'll add it to a 'invites' collection. 
+    // On Login (AdminLogin.tsx), we check 'invites'. If found, we create the user profile with 'premier' role.
+    
+    // SIMPLIFIED FOR DEMO:
+    // We will just return the data, and let the Admin trigger an email.
+    // But to show them in the list, we need to save them.
+    const tempId = 'invite_' + clientData.email.replace(/[^a-zA-Z0-9]/g, '');
+    await setDoc(doc(db, COLLECTIONS.USERS, tempId), {
+      ...clientData,
+      uid: tempId,
+      role: 'premier',
+      createdAt: new Date().toISOString(),
+      isPending: true // Flag to indicate they haven't technically 'claimed' the account via Auth
+    });
+    return tempId;
+  },
+
+  getPremierClients: (callback: (clients: UserProfile[]) => void) => {
+    return onSnapshot(collection(db, COLLECTIONS.USERS), (snapshot) => {
+      const users = snapshot.docs.map(d => d.data() as UserProfile);
+      callback(users.filter(u => u.role === 'premier'));
+    });
+  },
+
+  updateClientProfile: async (uid: string, data: Partial<UserProfile>) => {
+    // If it's a pending invite (custom ID), this still works.
+    // If it's a real user (Auth UID), this still works.
+    await updateDoc(doc(db, COLLECTIONS.USERS, uid), data);
+  },
+
+  // Documents
+  subscribeClientDocuments: (userId: string, callback: (docs: ClientDocument[]) => void) => {
+    return onSnapshot(collection(db, COLLECTIONS.DOCUMENTS), (snapshot) => {
+      const allDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ClientDocument));
+      const clientDocs = allDocs.filter(d => d.userId === userId);
+      clientDocs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(clientDocs);
+    });
+  },
+
+  addClientDocument: async (docData: Omit<ClientDocument, 'id'>) => {
+    await addDoc(collection(db, COLLECTIONS.DOCUMENTS), docData);
+  },
+
+  deleteClientDocument: async (id: string) => {
+    await deleteDoc(doc(db, COLLECTIONS.DOCUMENTS, id));
+  },
+
+  // --- STANDARD EXISTING METHODS ---
 
   subscribeHero: (callback: (hero: HeroContent) => void) => {
     return onSnapshot(doc(db, COLLECTIONS.HERO, 'main'), (docSnap) => {
@@ -166,7 +242,6 @@ export const contentService = {
   },
 
   subscribeJobs: (callback: (jobs: Job[]) => void) => {
-    // Client-side filtering to avoid index requirements
     return onSnapshot(collection(db, COLLECTIONS.JOBS), (snapshot) => {
       const allJobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Job));
       callback(allJobs.filter(j => j.status === 'active'));
@@ -184,7 +259,6 @@ export const contentService = {
   },
 
   subscribeUserApplications: (userId: string, callback: (apps: JobApplication[]) => void) => {
-    // Client-side filtering
     return onSnapshot(collection(db, COLLECTIONS.APPLICATIONS), (snapshot) => {
       const allApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as JobApplication));
       const userApps = allApps.filter(a => a.userId === userId);
@@ -200,6 +274,8 @@ export const contentService = {
   },
 
   submitApplication: async (app: Omit<JobApplication, 'id'>) => {
+    // Logic: If user applies, ensure their profile role is 'applicant' (unless they are premier/admin)
+    // We handle this loosely here.
     return await addDoc(collection(db, COLLECTIONS.APPLICATIONS), app);
   },
 
@@ -208,7 +284,6 @@ export const contentService = {
   },
 
   subscribeInsights: (callback: (insights: Insight[]) => void) => {
-    // REMOVED 'orderBy' to prevent missing index errors. Sorting done client-side.
     return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
       data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -217,7 +292,6 @@ export const contentService = {
   },
   
   subscribeHeroInsights: (callback: (insights: Insight[]) => void) => {
-    // Client-side filtering for hero visibility
     return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
       const allInsights = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
       const heroItems = allInsights.filter(i => i.showInHero === true);
@@ -227,7 +301,6 @@ export const contentService = {
   },
   
   subscribeFeaturedInsights: (callback: (insights: Insight[]) => void) => {
-    // Client-side filtering for featured items
     return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
       const allInsights = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
       const featuredItems = allInsights.filter(i => i.isFeatured === true);
@@ -273,7 +346,6 @@ export const contentService = {
   deleteOffice: async (id: string) => await deleteDoc(doc(db, COLLECTIONS.OFFICES, id)),
 
   subscribeInquiries: (callback: (inquiries: Inquiry[]) => void) => {
-    // Client-side sort
     return onSnapshot(collection(db, COLLECTIONS.INQUIRIES), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry));
       data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -282,7 +354,6 @@ export const contentService = {
   },
 
   subscribeUserInquiries: (userId: string, callback: (inquiries: Inquiry[]) => void) => {
-    // Client-side filtering
     return onSnapshot(collection(db, COLLECTIONS.INQUIRIES), (snapshot) => {
       const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry));
       const userInquiries = all.filter(i => i.userId === userId);

@@ -129,26 +129,14 @@ const generateExecutiveTemplate = (
 };
 
 export const emailService = {
-  /**
-   * Sends an email by calling the Vercel Serverless Function.
-   * "FAIL-OPEN" logic ensures UI flow continues even if email fails on dev/free tiers.
-   */
   send: async (to: string, subject: string, body: string, replyTo?: string) => {
     try {
       const response = await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to,
-          subject,
-          html: body,
-          replyTo
-        })
+        body: JSON.stringify({ to, subject, html: body, replyTo })
       });
-
       if (response.ok) return true;
-      
-      // Log errors but return true to prevent UI blocking
       if (response.status === 400) console.warn('Email Service Warning: Likely Free Tier Limit.', await response.json());
       return true;
     } catch (error) {
@@ -157,9 +145,6 @@ export const emailService = {
     }
   },
 
-  /**
-   * Send OTP for Account Verification
-   */
   sendVerificationOTP: async (email: string, name: string, otp: string) => {
     const richOtpContent = `
       <div style="text-align: center; padding: 10px 0;">
@@ -169,7 +154,6 @@ export const emailService = {
         Use this code to verify your identity. Valid for 10 minutes.<br>Do not share this code with anyone.
       </p>
     `;
-
     const html = generateExecutiveTemplate(
       "Identity Verification",
       name,
@@ -179,201 +163,74 @@ export const emailService = {
       "https://www.thetaxjournal.in",
       "Verify & Login"
     );
-
     await emailService.send(email, `Verification Code: ${otp}`, html);
   },
 
-  /**
-   * Send confirmation for Consultation/Booking
-   */
   sendBookingConfirmation: async (data: any) => {
     const { name, email, date, time, branch, uniqueId } = data;
-    const formattedDate = new Date(date).toLocaleDateString('en-IN', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-
-    // Appointment Card HTML
+    const formattedDate = new Date(date).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const overviewBody = `
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
-        <!-- Time Row -->
-        <tr>
-           <td width="40" valign="top" style="padding-bottom: 24px;">
-              <div style="background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-size: 16px;">📅</div>
-           </td>
-           <td valign="top" style="padding-bottom: 24px;">
-              <span style="display: block; font-size: 16px; font-weight: 700; color: ${COLORS.dark}; margin-bottom: 4px;">${formattedDate}</span>
-              <span style="display: block; font-size: 14px; color: ${COLORS.primary}; font-weight: 600;">${time.hour}:${time.minute} ${time.period} (IST)</span>
-           </td>
-        </tr>
-        <!-- Location Row -->
-        <tr>
-           <td width="40" valign="top">
-              <div style="background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-size: 16px;">📍</div>
-           </td>
-           <td valign="top">
-              <span style="display: block; font-size: 16px; font-weight: 700; color: ${COLORS.dark}; margin-bottom: 4px;">${branch} Chamber</span>
-              <span style="display: block; font-size: 13px; color: #64748B;">Reference ID: <span style="font-family: monospace; background: #fff; padding: 2px 6px; border: 1px solid #e2e8f0; border-radius: 4px;">${uniqueId}</span></span>
-           </td>
-        </tr>
+        <tr><td width="40" valign="top" style="padding-bottom: 24px;"><div style="background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-size: 16px;">📅</div></td><td valign="top" style="padding-bottom: 24px;"><span style="display: block; font-size: 16px; font-weight: 700; color: ${COLORS.dark}; margin-bottom: 4px;">${formattedDate}</span><span style="display: block; font-size: 14px; color: ${COLORS.primary}; font-weight: 600;">${time.hour}:${time.minute} ${time.period} (IST)</span></td></tr>
+        <tr><td width="40" valign="top"><div style="background-color: #E2E8F0; width: 32px; height: 32px; border-radius: 50%; text-align: center; line-height: 32px; font-size: 16px;">📍</div></td><td valign="top"><span style="display: block; font-size: 16px; font-weight: 700; color: ${COLORS.dark}; margin-bottom: 4px;">${branch} Chamber</span><span style="display: block; font-size: 13px; color: #64748B;">Reference ID: <span style="font-family: monospace; background: #fff; padding: 2px 6px; border: 1px solid #e2e8f0; border-radius: 4px;">${uniqueId}</span></span></td></tr>
       </table>
     `;
-
-    const html = generateExecutiveTemplate(
-      "Appointment Confirmed",
-      name,
-      `Your consultation request has been authorized. A Senior Partner has been notified of this engagement schedule.`,
-      "SESSION DETAILS",
-      overviewBody,
-      "https://www.thetaxjournal.in/dashboard",
-      "Manage Appointment"
-    );
-
-    // 1. Send to Client
-    await emailService.send(
-      email,
-      `Confirmed: Consultation on ${formattedDate}`,
-      html,
-      'admin@thetaxjournal.in'
-    );
-
-    // 2. Send to Admin
-    await emailService.send(
-      ADMIN_EMAIL,
-      `New Appointment: ${uniqueId}`, 
-      `<p>New appointment request from <strong>${name}</strong>.</p><p>Date: ${formattedDate}</p>`,
-      email
-    );
+    const html = generateExecutiveTemplate("Appointment Confirmed", name, `Your consultation request has been authorized. A Senior Partner has been notified.`, "SESSION DETAILS", overviewBody, "https://www.thetaxjournal.in/dashboard", "Manage Appointment");
+    await emailService.send(email, `Confirmed: Consultation on ${formattedDate}`, html, 'admin@thetaxjournal.in');
+    await emailService.send(ADMIN_EMAIL, `New Appointment: ${uniqueId}`, `<p>New appointment from <strong>${name}</strong>.</p>`, email);
   },
 
-  /**
-   * Send confirmation for RFP submission
-   */
   sendRFPConfirmation: async (data: any) => {
-    const { firstName, lastName, email, organization, category, summary, industry, spend, phone, attachmentName } = data;
-    const fullName = `${firstName} ${lastName}`;
-
-    const introText = `We confirm receipt of your Request for Proposal (RFP). Your query regarding <strong>${category}</strong> has been routed to our specialized intake desk.`;
-    
+    const { firstName, lastName, email, organization, category, summary, industry, spend } = data;
+    const introText = `We confirm receipt of your RFP regarding <strong>${category}</strong>.`;
     const overviewBody = `
-      <div style="margin-bottom: 20px; padding: 15px; background-color: #ffffff; border-left: 3px solid ${COLORS.primary}; font-style: italic; color: #555;">
-        "${summary}"
-      </div>
-      
+      <div style="margin-bottom: 20px; padding: 15px; background-color: #ffffff; border-left: 3px solid ${COLORS.primary}; font-style: italic; color: #555;">"${summary}"</div>
       <table border="0" cellpadding="0" cellspacing="0" width="100%">
-        <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #64748B; font-weight: 600;">Organization:</td>
-          <td style="padding: 8px 0; font-size: 13px; color: ${COLORS.dark}; text-align: right;">${organization}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #64748B; font-weight: 600;">Industry:</td>
-          <td style="padding: 8px 0; font-size: 13px; color: ${COLORS.dark}; text-align: right;">${industry}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; font-size: 13px; color: #64748B; font-weight: 600;">Legal Spend:</td>
-          <td style="padding: 8px 0; font-size: 13px; color: ${COLORS.dark}; text-align: right;">${spend}</td>
-        </tr>
+        <tr><td style="padding: 8px 0; font-size: 13px; color: #64748B;">Organization:</td><td style="text-align: right; color: ${COLORS.dark};">${organization}</td></tr>
       </table>
     `;
-
-    const html = generateExecutiveTemplate(
-      "Proposal Received",
-      fullName,
-      introText,
-      "RFP OVERVIEW",
-      overviewBody,
-      "https://www.thetaxjournal.in/dashboard",
-      "Check Status"
-    );
-
-    await emailService.send(
-      email,
-      `RFP Received: ${organization}`,
-      html,
-      'admin@thetaxjournal.in'
-    );
-
-    await emailService.send(
-      ADMIN_EMAIL,
-      `New RFP: ${organization}`,
-      `Category: ${category}<br>Summary: ${summary}`,
-      email
-    );
+    const html = generateExecutiveTemplate("Proposal Received", `${firstName} ${lastName}`, introText, "RFP OVERVIEW", overviewBody);
+    await emailService.send(email, `RFP Received: ${organization}`, html);
+    await emailService.send(ADMIN_EMAIL, `New RFP: ${organization}`, `Category: ${category}<br>Summary: ${summary}`, email);
   },
 
-  /**
-   * Send confirmation for Job Application
-   */
   sendApplicationConfirmation: async (data: any) => {
     const { name, email, jobTitle, formData } = data;
-
-    const overviewBody = `
-      <p style="margin-bottom: 15px;">We have securely filed your credentials for the position of <strong>${jobTitle}</strong>. Our Recruitment Board will review your dossier shortly.</p>
-      
-      <div style="background: #ffffff; padding: 15px; border-radius: 8px; border: 1px solid #E2E8F0;">
-        <p style="margin: 0 0 5px 0; font-size: 12px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">APPLICANT</p>
-        <p style="margin: 0 0 15px 0; font-size: 14px; color: ${COLORS.dark}; font-weight: 600;">${name}</p>
-        
-        <p style="margin: 0 0 5px 0; font-size: 12px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">EDUCATION</p>
-        <p style="margin: 0 0 15px 0; font-size: 14px; color: ${COLORS.text};">${formData?.education || 'Not provided'}</p>
-        
-        <p style="margin: 0 0 5px 0; font-size: 12px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">EXPERIENCE</p>
-        <p style="margin: 0; font-size: 14px; color: ${COLORS.text};">${formData?.experience || 'Not provided'}</p>
-      </div>
-    `;
-
-    const html = generateExecutiveTemplate(
-      "Application Received",
-      name,
-      `Thank you for your interest in joining AK Pandey & Associates.`,
-      "DOSSIER SUMMARY",
-      overviewBody,
-      "https://www.thetaxjournal.in/dashboard",
-      "Applicant Portal"
-    );
-
-    await emailService.send(email, `Application: ${jobTitle}`, html, 'careers@thetaxjournal.in');
+    const overviewBody = `<p>We have filed your credentials for <strong>${jobTitle}</strong>.</p>`;
+    const html = generateExecutiveTemplate("Application Received", name, `Thank you for your interest in joining AK Pandey & Associates.`, "DOSSIER SUMMARY", overviewBody);
+    await emailService.send(email, `Application: ${jobTitle}`, html);
     await emailService.send(ADMIN_EMAIL, `New Applicant: ${jobTitle}`, `Name: ${name}`, email);
   },
 
-  /**
-   * Send Status Update Email
-   */
   sendApplicationStatusUpdate: async (data: any) => {
     const { name, email, jobTitle, status } = data;
+    let subject = `Update: ${jobTitle}`;
+    let body = `<p>Your application status has changed to: <strong>${status}</strong>.</p>`;
+    if (status === 'Interview') body += `<p>We will contact you shortly to schedule.</p>`;
+    const html = generateExecutiveTemplate("Application Status", name, body, "STATUS UPDATE", "");
+    await emailService.send(email, subject, html);
+  },
 
-    let subject = "";
-    let headline = "";
-    let introText = "";
-    let overviewBody = "";
-    let ctaText = "View Dashboard";
-    
-    if (status === 'Interview') {
-       subject = `Interview: ${jobTitle}`;
-       headline = "Shortlisted for Interview";
-       introText = `We are pleased to invite you to the interview stage for <strong>${jobTitle}</strong>.`;
-       overviewBody = `<p>Your profile aligns with our strategic requirements. A member of our Recruitment Board will contact you within 24 hours to schedule the formal interaction.</p>`;
-    } else if (status === 'Rejected') {
-       subject = `Update: ${jobTitle}`;
-       headline = "Application Status";
-       introText = `Thank you for the time you invested in applying for <strong>${jobTitle}</strong>.`;
-       overviewBody = `<p>After careful consideration, we have decided not to proceed with your application at this time. We will keep your dossier in our secure matrix for future opportunities.</p>`;
-       ctaText = "View Other Roles";
-    }
-
-    if (subject) {
-      const html = generateExecutiveTemplate(
-        headline,
-        name,
-        introText,
-        "STATUS UPDATE",
-        overviewBody,
-        "https://www.thetaxjournal.in/dashboard",
-        ctaText
-      );
-      await emailService.send(email, subject, html, 'careers@thetaxjournal.in');
-    }
+  sendPremierInvitation: async (data: any) => {
+    const { name, email, companyName, mobile } = data;
+    const overviewBody = `
+      <p style="margin-bottom: 15px;">A secure client dashboard has been provisioned for <strong>${companyName}</strong>.</p>
+      <ul style="color: ${COLORS.text}; font-size: 14px; line-height: 1.6; padding-left: 20px;">
+        <li>Priority Appointment Booking</li>
+        <li>Direct Partner Access Line</li>
+        <li>Secure Document Vault</li>
+        <li>Real-time Invoice Status</li>
+      </ul>
+    `;
+    const html = generateExecutiveTemplate(
+      "Exclusive Access Invitation",
+      name,
+      "You have been invited to join the AK Pandey & Associates Premier Client Matrix.",
+      "MEMBERSHIP PRIVILEGES",
+      overviewBody,
+      "https://www.thetaxjournal.in/login",
+      "Activate Account"
+    );
+    await emailService.send(email, "Invitation: Premier Client Portal", html);
   }
 };

@@ -1,4 +1,5 @@
 
+
 export interface PracticeArea {
   id: string;
   title: string;
@@ -103,10 +104,32 @@ export interface Inquiry {
   details: any;
 }
 
+export interface ClientDocument {
+  id: string;
+  userId: string;
+  type: 'invoice' | 'brief' | 'contract' | 'other';
+  title: string;
+  url: string; // Base64 or URL
+  uploadedBy: 'admin' | 'client';
+  date: string;
+  amount?: string; // For invoices
+  status?: 'Paid' | 'Pending' | 'Overdue'; // For invoices
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
   name: string;
-  role: 'applicant' | 'general' | 'admin';
+  mobile?: string;
+  role: 'applicant' | 'general' | 'admin' | 'premier';
   createdAt: string;
+  // CRM Specific Fields
+  assignedAdvocate?: {
+    name: string;
+    email: string;
+    phone: string;
+    designation: string;
+    photo?: string;
+  };
+  companyName?: string;
 }

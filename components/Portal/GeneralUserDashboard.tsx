@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, LogOut, Clock, CheckCircle, Search, FileText, Bell, RefreshCw, ChevronRight, Calendar, MessageSquare, Briefcase, User } from 'lucide-react';
+import { Menu, LogOut, Clock, CheckCircle, Search, FileText, Bell, RefreshCw, ChevronRight, Calendar, MessageSquare, Briefcase, User, ArrowRight } from 'lucide-react';
 import { auth } from '../../firebase';
 import { contentService } from '../../services/contentService';
 import { Inquiry } from '../../types';
+import BookingPage from '../BookingPage';
 
 interface GeneralUserDashboardProps {
   onLogout: () => void;
@@ -16,6 +17,7 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
+  const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -29,6 +31,10 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
   }, []);
 
   const filtered = filter === 'all' ? inquiries : inquiries.filter(i => i.type === filter);
+
+  if (showBooking) {
+    return <BookingPage onBack={() => setShowBooking(false)} />;
+  }
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen pt-20 font-sans">
@@ -50,17 +56,24 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
             <h1 className="text-4xl md:text-5xl font-serif text-slate-900 mb-4">Good Day, {auth.currentUser?.displayName || 'Client'}</h1>
             <p className="text-slate-500 font-light">Monitor your mandates, appointments, and strategic inquiries.</p>
           </div>
-          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
-             {(['all', 'appointment', 'rfp', 'contact'] as FilterType[]).map(t => (
-               <button 
-                key={t}
-                onClick={() => setFilter(t)}
-                className={`px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${filter === t ? 'bg-[#CC1414] text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}
-               >
-                 {t}s
-               </button>
-             ))}
-          </div>
+          <button 
+             onClick={() => setShowBooking(true)}
+             className="px-8 py-4 bg-[#CC1414] text-white text-[10px] font-bold uppercase tracking-[0.3em] hover:bg-slate-900 transition-all rounded-lg shadow-xl flex items-center gap-3"
+          >
+             Book Consultation <ArrowRight size={14}/>
+          </button>
+        </div>
+        
+        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100 mb-8 w-fit">
+           {(['all', 'appointment', 'rfp', 'contact'] as FilterType[]).map(t => (
+             <button 
+              key={t}
+              onClick={() => setFilter(t)}
+              className={`px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all ${filter === t ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}
+             >
+               {t}s
+             </button>
+           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -71,7 +84,7 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
                 <div className="p-20 bg-white border border-slate-100 rounded-3xl text-center">
                    <MessageSquare size={48} className="mx-auto text-slate-100 mb-6" />
                    <p className="text-xl font-serif text-slate-400 mb-8">No active mandates found in this category.</p>
-                   <button onClick={onNavigateHome} className="px-10 py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-[#CC1414] transition-all">START NEW MANDATE</button>
+                   <button onClick={() => setShowBooking(true)} className="px-10 py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-[#CC1414] transition-all">START NEW MANDATE</button>
                 </div>
               ) : (
                 filtered.map(inquiry => (
@@ -112,16 +125,6 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
                        <p className="text-xs text-slate-400">{auth.currentUser?.email}</p>
                     </div>
                  </div>
-                 <div className="pt-4 space-y-4">
-                    <div className="flex justify-between items-center text-sm">
-                       <span className="text-slate-400">Account Type</span>
-                       <span className="font-bold text-slate-900 uppercase tracking-widest text-[10px]">Strategic Client</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                       <span className="text-slate-400">Mandate Limit</span>
-                       <span className="font-bold text-slate-900 uppercase tracking-widest text-[10px]">Unlimited</span>
-                    </div>
-                 </div>
               </div>
 
               <div className="bg-[#0A1931] text-white p-10 rounded-3xl shadow-2xl relative overflow-hidden">
@@ -132,8 +135,8 @@ const GeneralUserDashboard: React.FC<GeneralUserDashboardProps> = ({ onLogout, o
                        <Clock size={18} className="text-[#CC1414] mt-1 shrink-0" />
                        <div><p className="text-sm font-bold mb-1">Standard SLA</p><p className="text-[11px] text-blue-100/60 font-light">Mandates are typically assigned within 4 strategic hours.</p></div>
                     </div>
-                    <button className="w-full py-4 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[#CC1414] transition-all rounded-xl mt-4">
-                       Direct Partnership Line
+                    <button onClick={() => setShowBooking(true)} className="w-full py-4 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[#CC1414] transition-all rounded-xl mt-4">
+                       Book Priority Session
                     </button>
                  </div>
               </div>
