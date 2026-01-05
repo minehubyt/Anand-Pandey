@@ -23,7 +23,8 @@ interface AdminPortalProps {
 type Tab = 'hero' | 'insights' | 'reports' | 'podcasts' | 'casestudy' | 'authors' | 'offices' | 'appointments' | 'rfp' | 'jobs' | 'applications';
 
 // --- UTILITY: Image Compression ---
-// Essential for "No Storage" setups. Compresses images to fit in Firestore 1MB limit.
+// Optimized for speed and Realtime Database limits.
+// Resizes to Max 800px and 0.5 quality to ensure payload is small and save is instant.
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -36,8 +37,8 @@ const compressImage = (file: File): Promise<string> => {
         let width = img.width;
         let height = img.height;
         
-        // Resize logic: Max 1024px width/height to ensure < 1MB Base64 string
-        const MAX_SIZE = 1024;
+        // Resize logic: Max 800px (Optimized for speed)
+        const MAX_SIZE = 800;
         if (width > height) {
           if (width > MAX_SIZE) {
             height *= MAX_SIZE / width;
@@ -55,8 +56,8 @@ const compressImage = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Compress to JPEG at 0.6 quality (Good balance for web)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+        // Compress to JPEG at 0.5 quality (Fast upload, decent quality)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
         resolve(dataUrl);
       };
       img.onerror = (err) => reject(err);
@@ -137,34 +138,44 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
-    try {
-      setLoading(true);
-      if (activeTab === 'hero') {
-        await contentService.saveHero(activeEntity);
-      } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
-        await contentService.saveInsight(activeEntity);
-      } else if (activeTab === 'authors') {
-        await contentService.saveAuthor(activeEntity);
-      } else if (activeTab === 'offices') {
-        await contentService.saveOffice(activeEntity);
-      } else if (activeTab === 'jobs') {
-        await contentService.saveJob(activeEntity);
+  const handleSave = () => {
+    // OPTIMISTIC UI PATTERN:
+    // 1. Capture the data to save
+    const entityToSave = { ...activeEntity };
+    
+    // 2. Immediately close the UI to make it feel "Instant"
+    setIsEditing(false);
+    setActiveEntity(null);
+
+    // 3. Perform the actual database write in the background
+    // We do NOT await here to block the UI.
+    const performBackgroundSave = async () => {
+      try {
+        if (activeTab === 'hero') {
+          // Explicitly update local state instantly for Hero to avoid flicker
+          setHero(entityToSave as HeroContent);
+          await contentService.saveHero(entityToSave);
+        } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
+          await contentService.saveInsight(entityToSave);
+        } else if (activeTab === 'authors') {
+          await contentService.saveAuthor(entityToSave);
+        } else if (activeTab === 'offices') {
+          await contentService.saveOffice(entityToSave);
+        } else if (activeTab === 'jobs') {
+          await contentService.saveJob(entityToSave);
+        }
+      } catch (err: any) {
+        console.error("Background Save Error:", err);
+        let msg = "Sync Warning: Background save failed.";
+        if (err.code === 'resource-exhausted') {
+           msg = "Data Limit: Image too large even after compression.";
+        }
+        alert(msg);
       }
-      setIsEditing(false);
-      setActiveEntity(null);
-    } catch (err: any) {
-      console.error("Save Error:", err);
-      let msg = "Protocol error: Save failed.";
-      if (err.code === 'resource-exhausted') {
-         msg = "Data Limit Exceeded: The image is too large for the database. Compression failed or file is too big.";
-      } else if (err.code === 'permission-denied') {
-         msg = "Access Denied: You do not have permission to modify this data.";
-      }
-      alert(msg);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    // Trigger background process
+    performBackgroundSave();
   };
 
   const handleDelete = async (id: string) => {
@@ -472,10 +483,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      <div className="pt-12 border-t border-white/5 flex gap-6">
                         <button 
                            onClick={handleSave} 
-                           disabled={loading}
-                           className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                           className="flex-1 py-5 bg-[#CC1414] text-white text-[11px] font-bold uppercase tracking-[0.3em] rounded-2xl shadow-xl hover:bg-slate-900 transition-all flex items-center justify-center gap-3"
                         >
-                           <Save size={18}/> {loading ? 'SAVING DATA...' : 'AUTHORIZE SAVE'}
+                           <Save size={18}/> INSTANT SAVE
                         </button>
                         <button onClick={() => setIsEditing(false)} className="px-12 py-5 bg-slate-100 text-slate-400 text-[11px] font-bold uppercase tracking-widest rounded-2xl">Cancel</button>
                      </div>
