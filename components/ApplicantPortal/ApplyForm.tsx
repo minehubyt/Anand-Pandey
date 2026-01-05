@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChevronRight, ChevronLeft, Upload, User, BookOpen, Heart, CheckCircle, FileText, Loader2, Sparkles, Camera, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Upload, User, BookOpen, Heart, CheckCircle, FileText, Loader2, Sparkles, Camera, X, Trash2 } from 'lucide-react';
 import { parseResume } from '../../services/geminiService';
 import { contentService } from '../../services/contentService';
 import { emailService } from '../../services/emailService';
@@ -27,27 +27,35 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
     education: '',
     experience: '',
     interests: '',
-    resumeUrl: ''
+    resumeUrl: '', // Stores filename or placeholder
+    resumeBase64: '' // Stores actual file data (kept in state only, not sent to DB)
   });
 
-  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>, isManual = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check for supported types
-    const supportedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
-    const isSupported = supportedTypes.includes(file.type);
-    
-    // If not supported strictly, we still try but warn if it fails
-    // Note: Gemini supports PDF and Images best. DOCX is hit or miss without conversion.
-    
-    setIsParsing(true);
+    if (isManual) {
+        // Just store the file for manual submission
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64String = event.target?.result as string;
+            setFormData(prev => ({
+                ...prev,
+                resumeUrl: file.name, // Store filename
+                resumeBase64: base64String // Store content for email
+            }));
+        };
+        reader.readAsDataURL(file);
+        return;
+    }
 
+    // AI Parsing Path
+    setIsParsing(true);
     try {
         const reader = new FileReader();
         reader.onload = async (event) => {
             const base64String = event.target?.result as string;
-            // Use file.type, default to PDF if missing (unlikely for file input)
             const mimeType = file.type || 'application/pdf';
 
             try {
@@ -55,17 +63,17 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                 
                 if (parsed) {
                     setFormData(prev => ({
-                    ...prev,
-                    name: parsed.name || prev.name,
-                    email: parsed.email || prev.email,
-                    mobile: parsed.mobile || prev.mobile,
-                    education: parsed.education || prev.education,
-                    experience: parsed.experience || prev.experience,
-                    interests: parsed.interests || prev.interests,
-                    resumeUrl: 'AI_PROCESSED_DOC'
+                        ...prev,
+                        name: parsed.name || prev.name,
+                        email: parsed.email || prev.email,
+                        mobile: parsed.mobile || prev.mobile,
+                        education: parsed.education || prev.education,
+                        experience: parsed.experience || prev.experience,
+                        interests: parsed.interests || prev.interests,
+                        resumeUrl: 'AI_PARSED_' + file.name,
+                        resumeBase64: base64String
                     }));
                     
-                    // Artificial delay for UX if parsing was too fast
                     setTimeout(() => {
                         setIsParsing(false);
                         setSlide('personal');
@@ -79,10 +87,6 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                 alert("We couldn't auto-read this document format. Please enter details manually.");
             }
         };
-        reader.onerror = () => {
-            setIsParsing(false);
-            alert("Error reading file.");
-        };
         reader.readAsDataURL(file);
     } catch (err) {
         setIsParsing(false);
@@ -92,7 +96,10 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const app = {
+    
+    // Prepare lightweight object for Firestore (Limit < 1MB)
+    // We DO NOT save the full base64 resume string to Firestore to prevent hanging.
+    const appForDb = {
       jobId: job.id,
       jobTitle: job.title,
       userId: auth.currentUser?.uid || 'anonymous',
@@ -103,26 +110,27 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
           name: formData.name,
           email: formData.email,
           mobile: formData.mobile,
-          photo: formData.photo
+          photo: formData.photo // Photo usually small enough, or ideally should be a URL
         },
         education: formData.education,
         experience: formData.experience,
         interests: formData.interests,
-        resumeUrl: formData.resumeUrl || 'attached_during_process'
+        resumeUrl: formData.resumeUrl || 'Not Attached' 
       }
     };
 
     try {
-      // 1. Submit Data (Fast)
-      await contentService.submitApplication(app);
+      // 1. Submit Data (Fast - lightweight text only)
+      await contentService.submitApplication(appForDb);
       
       // 2. Trigger Strategic Email (Background / Fire-and-Forget)
-      // We do NOT await this, so the UI completes instantly.
+      // We pass the full formData including base64 so the email service can attach it (if implemented)
+      // or at least have the data.
       emailService.sendApplicationConfirmation({
         name: formData.name,
         email: formData.email,
         jobTitle: job.title,
-        formData: formData // Passing full data for email body
+        formData: formData 
       }).catch(err => console.error("Background email send failed:", err));
       
       setLoading(false);
@@ -166,7 +174,7 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Analysing Document...</span>
                     </div>
                   )}
-                  <input type="file" className="hidden" onChange={handleResumeUpload} accept=".pdf,image/*" />
+                  <input type="file" className="hidden" onChange={(e) => handleResumeUpload(e, false)} accept=".pdf,image/*" />
                   <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                      <Sparkles className="text-[#CC1414]" size={32} />
                   </div>
@@ -240,12 +248,33 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
         {slide === 'resume' && (
           <div className="animate-reveal-up text-center space-y-12">
              <h2 className="text-5xl font-serif text-slate-900">Final Verification</h2>
-             <div className="max-w-2xl mx-auto p-16 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center gap-6">
-                <FileText className="text-slate-200" size={64}/>
-                <p className="text-lg text-slate-500 font-light">Please ensure your latest CV is attached for the Partner Review board.</p>
-                <button className="px-10 py-4 bg-white border border-slate-200 text-slate-900 text-[11px] font-bold tracking-widest uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center gap-3">
-                   <Upload size={16}/> ATTACH PDF
-                </button>
+             <div className="max-w-2xl mx-auto p-16 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center gap-6 relative">
+                {formData.resumeUrl ? (
+                    <>
+                        <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-[#CC1414]">
+                            <FileText size={32}/>
+                        </div>
+                        <div>
+                            <p className="text-lg font-serif text-slate-900 mb-1">Document Attached</p>
+                            <p className="text-xs text-slate-400 uppercase tracking-widest">{formData.resumeUrl}</p>
+                        </div>
+                        <button 
+                            onClick={() => setFormData({...formData, resumeUrl: '', resumeBase64: ''})}
+                            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                            <Trash2 size={20}/>
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <FileText className="text-slate-200" size={64}/>
+                        <p className="text-lg text-slate-500 font-light">Please ensure your latest CV is attached for the Partner Review board.</p>
+                        <label className="px-10 py-4 bg-white border border-slate-200 text-slate-900 text-[11px] font-bold tracking-widest uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center gap-3 cursor-pointer">
+                            <Upload size={16}/> ATTACH PDF
+                            <input type="file" className="hidden" onChange={(e) => handleResumeUpload(e, true)} accept=".pdf,image/*" />
+                        </label>
+                    </>
+                )}
              </div>
           </div>
         )}
@@ -279,10 +308,10 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
                   <button 
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="px-12 py-5 bg-[#CC1414] text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:scale-105 transition-all shadow-2xl flex items-center gap-3"
+                    className="px-12 py-5 bg-[#CC1414] text-white text-[12px] font-bold tracking-[0.3em] uppercase hover:scale-105 transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 disabled:scale-100"
                   >
                      {loading ? <Loader2 className="animate-spin" size={18}/> : <CheckCircle size={18}/>}
-                     AUTHORIZE SUBMISSION
+                     {loading ? 'TRANSMITTING...' : 'AUTHORIZE SUBMISSION'}
                   </button>
                 ) : (
                   <button 
