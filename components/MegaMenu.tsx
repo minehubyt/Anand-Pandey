@@ -3,12 +3,12 @@ import React, { useEffect, useState } from 'react';
 interface MegaMenuProps {
   activeMenu: string | null;
   onClose: () => void;
-  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking', id?: string) => void;
+  onNavigate: (type: string, id?: string) => void;
 }
 
 export const MENU_DATA: Record<string, {
-  sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string; href?: string }[] }[];
-  featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string };
+  sections: { title: string; links: { name: string; type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string; href?: string }[] }[];
+  featured?: { title: string; desc: string; image: string; type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string };
 }> = {
   'Who we Are': {
     sections: [

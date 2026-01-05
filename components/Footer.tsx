@@ -46,6 +46,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <li><button onClick={() => onNavigate('login')} className="flex items-center gap-2 hover:text-[#CC1414] transition-colors"><Lock className="w-3 h-3" /> Strategic Portal</button></li>
               <li><button onClick={() => onNavigate('page', 'privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
               <li><button onClick={() => onNavigate('page', 'disclaimer')} className="hover:text-white transition-colors">Disclaimer</button></li>
+              <li><button onClick={() => onNavigate('page', 'terms')} className="hover:text-white transition-colors">Terms of Use</button></li>
               <li><button onClick={() => onNavigate('page', 'compliance')} className="hover:text-white transition-colors">Compliance</button></li>
             </ul>
           </div>
