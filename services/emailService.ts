@@ -9,17 +9,21 @@ const ADMIN_EMAIL = 'admin@anandpandey.in';
 export const emailService = {
   /**
    * Simulates sending an email to avoid CORS issues in a client-side only environment.
-   * In a production app, this would call a backend endpoint (e.g., Firebase Functions).
+   * This ensures the UI flow completes successfully without crashing.
    */
-  send: async (to: string, subject: string, html: string) => {
-    console.log(`[EMAIL SIMULATION] 
-      To: ${to}
-      Subject: ${subject}
-      Content: (HTML Content Omitted for logs)
-    `);
+  send: async (to: string, subject: string, body: string) => {
+    console.group('📧 EMAIL SIMULATION [DEMO MODE]');
+    console.log(`TO: ${to}`);
+    console.log(`SUBJECT: ${subject}`);
+    console.log(`BODY: ${body}`);
+    console.groupEnd();
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Simulate network latency
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Explicit feedback for the user testing the replica
+    // window.alert(`DEMO SUCCESS: Email simulated to ${to}.\n\n(See Console for details)`);
+    
     return true; 
   },
 
@@ -34,18 +38,16 @@ export const emailService = {
       year: 'numeric'
     });
 
-    // Simulate sending to Client
     await emailService.send(
       email,
       `Mandate Authorized: Consultation ${uniqueId}`,
-      `Confirmation for ${name} at ${branch} on ${formattedDate}`
+      `Dear ${name},\n\nYour appointment at our ${branch} chamber is confirmed for ${formattedDate} at ${time.hour}:${time.minute} ${time.period}.\n\nReference: ${uniqueId}`
     );
 
-    // Simulate sending to Admin
     await emailService.send(
       ADMIN_EMAIL,
       `URGENT: New Appointment - ${uniqueId}`,
-      `New appointment request from ${name}`
+      `New appointment request from ${name} for ${formattedDate}.`
     );
   },
 
@@ -59,13 +61,13 @@ export const emailService = {
     await emailService.send(
       email,
       `RFP Received: Strategic Partnership Mandate`,
-      `RFP Received for ${organization} regarding ${category}`
+      `Dear ${fullName},\n\nWe have received your RFP for ${organization} regarding ${category}. A Partner will review this shortly.`
     );
 
     await emailService.send(
       ADMIN_EMAIL,
       `NEW RFP: ${organization}`,
-      `RFP from ${fullName}`
+      `RFP Category: ${category}\nContact: ${fullName} (${email})`
     );
   },
 
@@ -78,13 +80,13 @@ export const emailService = {
     await emailService.send(
       email,
       `Dossier Authorized: ${jobTitle}`,
-      `Application received for ${jobTitle}`
+      `Dear ${name},\n\nYour application for ${jobTitle} has been securely filed in our candidate system.`
     );
 
     await emailService.send(
       ADMIN_EMAIL,
       `NEW APPLICATION: ${jobTitle}`,
-      `Applicant: ${name}`
+      `Applicant: ${name}\nEmail: ${email}`
     );
   }
 };

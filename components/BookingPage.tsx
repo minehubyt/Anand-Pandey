@@ -67,7 +67,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack }) => {
         }
       });
       
-      // Trigger Strategic Email Communication (Simulated to avoid CORS)
+      // Trigger Strategic Email Communication (Simulated)
       await emailService.sendBookingConfirmation({
         ...bookingData,
         uniqueId
@@ -75,6 +75,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onBack }) => {
       
       setSubmitted(true);
     } catch (error) {
+      console.error("Booking failed", error);
       alert('Network protocol error. Please try again.');
     } finally {
       setLoading(false);

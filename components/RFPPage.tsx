@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Send, FileUp, CheckCircle, Info, ChevronRight, ChevronLeft, Shield, Clock, Award } from 'lucide-react';
+import { ArrowLeft, Send, FileUp, CheckCircle, Info, ChevronRight, ChevronLeft, Shield, Clock, Award, Menu } from 'lucide-react';
 import { emailService } from '../services/emailService';
 
 interface RFPPageProps {
@@ -32,7 +32,6 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
     summary: ''
   });
 
-  // Trigger animation reset when step changes
   useEffect(() => {
     setAnimationClass('');
     const timer = setTimeout(() => setAnimationClass('animate-fade-in-up'), 10);
@@ -55,14 +54,16 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
     e.preventDefault();
     setLoading(true);
     
-    // Trigger Strategic Email Communication
-    await emailService.sendRFPConfirmation(formData);
-    
-    setTimeout(() => {
-      setLoading(false);
+    // Trigger Strategic Email Communication (Simulated)
+    try {
+      await emailService.sendRFPConfirmation(formData);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1500);
+    } catch (error) {
+      console.error("Transmission error", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -90,10 +91,24 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="pt-32 md:pt-48 pb-32 md:pb-48 bg-[#FBFBFB] min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-        
-        {/* Navigation & Header */}
+    <div className="pt-20 pb-32 md:pb-48 bg-[#FBFBFB] min-h-screen">
+       {/* Standardized Header */}
+       <header className="fixed top-0 w-full z-[60] bg-white border-b border-slate-100 h-16 px-4 md:px-8 flex items-center justify-between transition-all duration-300">
+        <div className="flex items-center gap-6">
+          <button onClick={onBack} className="p-2 -ml-2 text-slate-900 hover:text-[#CC1414] transition-colors">
+             <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center font-sans uppercase tracking-[0.15em] text-slate-900 font-bold text-[13px] md:text-[15px]">
+             STRATEGIC RFP
+          </div>
+        </div>
+        <div className="flex items-baseline font-sans uppercase tracking-[0.08em] text-slate-900 font-bold text-[11px] md:text-[13px] hidden sm:flex">
+           AK PANDEY <span className="text-[9px] md:text-[10px] mx-1">&</span> ASSOCIATES
+        </div>
+      </header>
+
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 pt-12">
+        {/* Navigation & Title */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12 mb-20">
           <div className="animate-fade-in">
             <button 
@@ -138,7 +153,6 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
           <div className="lg:col-span-8">
             <div className="bg-white shadow-2xl border border-slate-50 min-h-[650px] flex flex-col relative overflow-hidden rounded-sm">
               
-              {/* Decorative progress top bar */}
               <div 
                 className="absolute top-0 left-0 h-1.5 bg-[#CC1414] transition-all duration-1000 ease-in-out z-20" 
                 style={{ width: `${(currentStep / STEPS.length) * 100}%` }}

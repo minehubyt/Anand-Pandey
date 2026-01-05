@@ -66,33 +66,33 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
 
   return (
     <nav 
-      className={`fixed top-0 w-full z-50 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] bg-white border-b border-slate-200 ${isScrolled ? 'py-1 shadow-md' : 'py-3 shadow-sm'}`}
+      className={`fixed top-0 w-full z-50 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] bg-white border-b border-slate-200 h-16`}
     >
-      <div className="max-w-[1920px] mx-auto px-4 md:px-8 lg:px-12">
-        <div className={`flex justify-between items-center transition-all duration-500 ${isScrolled ? 'h-12' : 'h-14'}`}>
+      <div className="max-w-[1920px] mx-auto px-4 md:px-8 lg:px-12 h-full">
+        <div className="flex justify-between items-center h-full">
           
           {/* Logo Section */}
-          <div className="flex items-center min-w-0 flex-shrink-0">
+          <div className="flex items-center min-w-0 flex-shrink-0 h-full">
             <button 
-              className="mr-3 p-1 text-slate-900 focus:outline-none transition-colors group" 
+              className="mr-4 p-1 text-slate-900 focus:outline-none transition-colors group" 
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
             >
               {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 transition-transform" />}
             </button>
             
-            <button onClick={() => onNavigate('home')} className="flex items-center overflow-hidden group">
+            <button onClick={() => onNavigate('home')} className="flex items-center overflow-hidden group h-full">
               <div className="flex items-center font-sans uppercase tracking-[0.18em] text-[#A6192E] font-medium transition-all duration-500 origin-left">
-                <span className={`leading-none font-medium transition-all duration-500 ${isScrolled ? 'text-[15px] lg:text-[16px]' : 'text-[16px] lg:text-[18px]'}`}>AK PANDEY</span>
-                <span className={`mx-1.5 self-center transition-all duration-500 ${isScrolled ? 'text-[10px]' : 'text-[11px]'}`}>&</span>
-                <span className={`leading-none font-medium transition-all duration-500 ${isScrolled ? 'text-[15px] lg:text-[16px]' : 'text-[16px] lg:text-[18px]'}`}>ASSOCIATES</span>
+                <span className="text-[16px] lg:text-[18px] leading-none font-medium">AK PANDEY</span>
+                <span className="text-[11px] mx-1.5 self-center">&</span>
+                <span className="text-[16px] lg:text-[18px] leading-none font-medium">ASSOCIATES</span>
               </div>
             </button>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center h-full ml-auto">
-            <div className={`flex items-center h-full transition-all duration-500 ${isScrolled ? 'gap-6 xl:gap-8' : 'gap-5 xl:gap-8'}`}>
+            <div className="flex items-center h-full gap-8">
               {navLinks.map((link) => (
                 <div 
                   key={link.name} 
@@ -104,8 +104,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
                       e.preventDefault();
                       toggleMenu(link.name, link);
                     }}
-                    className={`font-bold tracking-[0.12em] uppercase transition-all whitespace-nowrap border-b-2 py-1
-                      ${isScrolled ? 'text-[10px] xl:text-[11px]' : 'text-[10px] lg:text-[11px]'}
+                    className={`font-bold tracking-[0.12em] uppercase transition-all whitespace-nowrap border-b-2 py-1 text-[11px]
                       ${activeMenu === link.name ? 'text-[#CC1414] border-[#CC1414]' : 'text-slate-800 border-transparent hover:text-[#CC1414]'}
                     `}
                   >
@@ -116,16 +115,14 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
             </div>
             
             {/* Right Icons Section */}
-            <div className={`flex items-center border-l border-slate-200 self-center transition-all duration-500 
-              ${isScrolled ? 'ml-5 pl-5 h-5 gap-3' : 'ml-6 pl-6 h-6 gap-4'}`}
-            >
+            <div className="flex items-center border-l border-slate-200 ml-6 pl-6 h-6 gap-4 self-center">
               <button className="text-slate-800 hover:text-[#CC1414] transition-colors p-1" aria-label="Search">
-                <Search className={`${isScrolled ? 'w-3.5 h-3.5' : 'w-4 h-4'} stroke-[2] transition-all duration-300`} />
+                <Search className="w-4 h-4 stroke-[2]" />
               </button>
               
               <div className="flex items-center gap-1.5 text-slate-800 hover:text-[#CC1414] transition-colors cursor-pointer group select-none px-1">
-                <Globe className={`${isScrolled ? 'w-3.5 h-3.5' : 'w-4 h-4'} stroke-[2] transition-all duration-300`} />
-                <span className={`font-bold tracking-wider uppercase transition-all duration-300 ${isScrolled ? 'text-[9px]' : 'text-[10px]'}`}>EN</span>
+                <Globe className="w-4 h-4 stroke-[2]" />
+                <span className="font-bold tracking-wider uppercase text-[10px]">EN</span>
               </div>
               
               <button 
@@ -133,22 +130,22 @@ const Navbar: React.FC<NavbarProps> = ({ onNavigate }) => {
                 aria-label="Login"
                 onClick={() => onNavigate('login')}
               >
-                <User className={`${isScrolled ? 'w-3.5 h-3.5' : 'w-4 h-4'} stroke-[2] transition-all duration-300`} />
+                <User className="w-4 h-4 stroke-[2]" />
               </button>
             </div>
           </div>
 
           {/* Mobile Right Icons (Only visible when desktop nav is hidden) */}
-          <div className="lg:hidden flex items-center space-x-2">
+          <div className="lg:hidden flex items-center space-x-3">
              <button className="p-2 text-slate-900" aria-label="Search">
-                <Search className="w-4 h-4" />
+                <Search className="w-5 h-5" />
              </button>
              <button 
               className="p-2 text-slate-900" 
               aria-label="Login"
               onClick={() => onNavigate('login')}
              >
-                <User className="w-4 h-4" />
+                <User className="w-5 h-5" />
              </button>
           </div>
         </div>
