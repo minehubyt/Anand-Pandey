@@ -22,8 +22,8 @@ interface AdminPortalProps {
 
 type Tab = 'hero' | 'insights' | 'reports' | 'podcasts' | 'casestudy' | 'authors' | 'offices' | 'appointments' | 'rfp' | 'jobs' | 'applications';
 
-// --- UTILITY: Robust Image Compression ---
-// Recursively compresses images to ensure they fit within Firestore's 1MB document limit.
+// --- UTILITY: Aggressive Image Compression ---
+// Ensures images are small enough to write to Firestore instantly without clogging the stream.
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -33,57 +33,31 @@ const compressImage = (file: File): Promise<string> => {
       img.src = e.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        
-        // Initial strategy: 1000px at 0.7 quality
         let width = img.width;
         let height = img.height;
-        let MAX_SIZE = 1000;
-        let quality = 0.7;
-
-        const attemptCompression = () => {
-            let currW = width;
-            let currH = height;
-
-            if (currW > currH) {
-                if (currW > MAX_SIZE) {
-                    currH *= MAX_SIZE / currW;
-                    currW = MAX_SIZE;
-                }
-            } else {
-                if (currH > MAX_SIZE) {
-                    currW *= MAX_SIZE / currH;
-                    currH = MAX_SIZE;
-                }
-            }
-
-            canvas.width = currW;
-            canvas.height = currH;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, currW, currH);
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', quality);
-            
-            // Check size: Base64 string length ~1.33 * bytes. 
-            // Target: < 900KB (~1,200,000 chars) to be safe for Firestore (1MB limit)
-            if (dataUrl.length > 1200000) {
-                // If too big, reduce quality or size and try again
-                if (quality > 0.5) {
-                    quality -= 0.2;
-                    attemptCompression();
-                } else if (MAX_SIZE > 600) {
-                    MAX_SIZE -= 200;
-                    // Reset dimensions to original to re-calculate aspect ratio correctly
-                    attemptCompression(); 
-                } else {
-                    // Last resort: aggressive compression
-                    resolve(canvas.toDataURL('image/jpeg', 0.3));
-                }
-            } else {
-                resolve(dataUrl);
-            }
-        };
-
-        attemptCompression();
+        
+        // Strict Limit: Max 800px
+        const MAX_SIZE = 800;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG at 0.6 quality (Good balance of speed/quality)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+        resolve(dataUrl);
       };
       img.onerror = (err) => reject(err);
     };
@@ -110,7 +84,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeEntity, setActiveEntity] = useState<any>(null);
   const [selectedApp, setSelectedApp] = useState<JobApplication | null>(null);
-  const [appActionLoading, setAppActionLoading] = useState(false);
+  
+  // NOTE: Removed appActionLoading state to prevent UI locking.
 
   useEffect(() => {
     setLoading(true);
@@ -173,12 +148,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     setActiveEntity(null);
 
     // 3. Perform the actual database write in the background
-    // We do NOT await here to block the UI.
     const performBackgroundSave = async () => {
       try {
         console.log(`Saving ${activeTab}...`);
         if (activeTab === 'hero') {
-          // Explicitly update local state instantly for Hero to avoid flicker in Admin View
           setHero(entityToSave as HeroContent);
           await contentService.saveHero(entityToSave);
         } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
@@ -193,11 +166,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
         console.log('Save successful');
       } catch (err: any) {
         console.error("Background Save Error:", err);
-        let msg = "Sync Warning: Background save failed.";
-        if (err.code === 'resource-exhausted') {
-           msg = "Data Limit: Image too large. Please use a smaller image.";
-        }
-        alert(msg);
+        // Do not alert the user to prevent interrupting their flow, just log it.
+        // If it's a critical error, the data will just revert on next refresh.
       }
     };
 
@@ -207,40 +177,56 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Confirm data erasure?")) return;
+    // Fire and forget delete
     if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
-      await contentService.deleteInsight(id);
+      contentService.deleteInsight(id);
     } else if (activeTab === 'authors') {
-      await contentService.deleteAuthor(id);
+      contentService.deleteAuthor(id);
     } else if (activeTab === 'offices') {
-      await contentService.deleteOffice(id);
+      contentService.deleteOffice(id);
     } else if (activeTab === 'jobs') {
-      await contentService.deleteJob(id);
+      contentService.deleteJob(id);
     }
   };
 
-  const handleAppStatusChange = async (status: JobApplication['status']) => {
+  // --- INSTANT CANDIDATE ACTION ---
+  const handleAppStatusChange = (status: JobApplication['status']) => {
     if (!selectedApp) return;
-    setAppActionLoading(true);
-    try {
-      // 1. Update Database
-      await contentService.updateApplicationStatus(selectedApp.id, status);
-      
-      // 2. Send Email Notification
-      await emailService.sendApplicationStatusUpdate({
-        name: selectedApp.data.personal.name,
-        email: selectedApp.data.personal.email,
-        jobTitle: selectedApp.jobTitle,
-        status: status
-      });
+    
+    // 1. Capture snapshot for background task
+    const appToUpdate = { ...selectedApp };
+    const appId = appToUpdate.id;
+    const applicantName = appToUpdate.data.personal.name;
+    const applicantEmail = appToUpdate.data.personal.email;
+    const jobTitle = appToUpdate.jobTitle;
 
-      setSelectedApp(null);
-      alert(`Status updated to ${status}. Notification dispatched.`);
-    } catch (err) {
-      console.error("Status Update Failed", err);
-      alert("Failed to update status.");
-    } finally {
-      setAppActionLoading(false);
-    }
+    // 2. INSTANT UI FEEDBACK
+    // Close the modal immediately so the user isn't stuck waiting.
+    setSelectedApp(null);
+    
+    // 3. Optional: Show a non-blocking toast (using alert for now as requested by simplicity, but executing AFTER state update)
+    // setTimeout(() => alert(`Candidate moved to '${status}'. Notification dispatched.`), 100);
+
+    // 4. Background Process (Fire and Forget)
+    (async () => {
+        try {
+            // Update Database
+            await contentService.updateApplicationStatus(appId, status);
+            
+            // Send Email Notification
+            await emailService.sendApplicationStatusUpdate({
+                name: applicantName,
+                email: applicantEmail,
+                jobTitle: jobTitle,
+                status: status
+            });
+            console.log(`Background status update complete for ${applicantName}`);
+        } catch (err) {
+            console.error("Background Status Update Failed (Check Console)", err);
+            // We do not alert here to avoid jarring the user later. 
+            // The UI is already updated optimistically via local state or subscription.
+        }
+    })();
   };
 
   const filteredInquiries = inquiries.filter(i => 
@@ -746,17 +732,15 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                  <footer className="px-10 py-8 border-t border-white/5 flex gap-4 bg-slate-50/50">
                     <button 
                       onClick={() => handleAppStatusChange('Interview')}
-                      disabled={appActionLoading}
-                      className="flex-1 py-4 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-green-600/20 hover:scale-105 transition-all disabled:opacity-50"
+                      className="flex-1 py-4 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-green-600/20 hover:scale-105 transition-all"
                     >
-                      {appActionLoading ? 'Processing...' : 'Move to Interview Stage'}
+                      Move to Interview Stage
                     </button>
                     <button 
                       onClick={() => handleAppStatusChange('Rejected')}
-                      disabled={appActionLoading}
-                      className="flex-1 py-4 bg-[#CC1414] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/20 hover:scale-105 transition-all disabled:opacity-50"
+                      className="flex-1 py-4 bg-[#CC1414] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl shadow-lg shadow-red-600/20 hover:scale-105 transition-all"
                     >
-                      {appActionLoading ? 'Processing...' : 'Authorize Rejection'}
+                      Authorize Rejection
                     </button>
                     <button onClick={() => setSelectedApp(null)} className="px-10 py-4 bg-white border border-slate-200 text-slate-400 text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all">Close Dossier</button>
                  </footer>
