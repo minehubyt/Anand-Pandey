@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Send, FileUp, CheckCircle, Info, ChevronRight, ChevronLeft, Shield, Clock, Award, Menu } from 'lucide-react';
+import { ArrowLeft, Send, FileUp, CheckCircle, Info, ChevronRight, ChevronLeft, Shield, Clock, Award, Menu, Trash2 } from 'lucide-react';
 import { emailService } from '../services/emailService';
 
 interface RFPPageProps {
@@ -29,7 +29,8 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
     industry: 'Technology & AI',
     spend: 'Undisclosed',
     category: 'M&A Advisory',
-    summary: ''
+    summary: '',
+    attachmentName: ''
   });
 
   useEffect(() => {
@@ -48,6 +49,18 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, attachmentName: file.name }));
+    }
+  };
+
+  const handleRemoveFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFormData(prev => ({ ...prev, attachmentName: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -254,16 +267,34 @@ const RFPPage: React.FC<RFPPageProps> = ({ onBack }) => {
                     <div className="space-y-16">
                       <header>
                         <h2 className="text-3xl md:text-4xl font-serif text-slate-900 mb-4">Final Validation</h2>
-                        <p className="text-lg text-slate-500 font-light">Upload relevant documentation and certify the submission.</p>
+                        <p className="text-lg text-slate-500 font-light">Upload relevant documentation (Optional) and certify the submission.</p>
                       </header>
                       <div className="space-y-10">
-                        <div className="border-2 border-dashed border-slate-200 p-12 md:p-20 text-center rounded-sm hover:border-[#CC1414] transition-all cursor-pointer group bg-[#FDFDFD] relative overflow-hidden">
-                          <div className="absolute inset-0 bg-[#CC1414]/0 group-hover:bg-[#CC1414]/5 transition-colors" />
-                          <FileUp className="w-16 h-16 text-slate-300 mx-auto mb-8 group-hover:text-[#CC1414] transition-colors group-hover:scale-110 duration-700" />
-                          <p className="text-2xl font-serif text-slate-900 mb-3">Proprietary RFP Document</p>
-                          <p className="text-[16px] text-slate-500 font-light mb-6">Click to select or drag and drop files here</p>
-                          <p className="text-[11px] text-slate-400 uppercase tracking-[0.3em] border border-slate-200 inline-block px-6 py-2.5 rounded-full bg-white shadow-sm">PDF, DOCX, XLSX up to 50MB</p>
-                        </div>
+                        <label className={`border-2 border-dashed p-12 md:p-20 text-center rounded-sm transition-all cursor-pointer group relative overflow-hidden block ${formData.attachmentName ? 'border-[#CC1414] bg-white' : 'border-slate-200 bg-[#FDFDFD] hover:border-[#CC1414]'}`}>
+                          <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xlsx" />
+                          <div className={`absolute inset-0 transition-colors ${formData.attachmentName ? 'bg-[#CC1414]/5' : 'bg-transparent group-hover:bg-[#CC1414]/5'}`} />
+                          
+                          {formData.attachmentName ? (
+                            <div className="relative z-10 flex flex-col items-center">
+                               <CheckCircle className="w-16 h-16 text-[#CC1414] mb-4" />
+                               <p className="text-2xl font-serif text-slate-900 mb-2">File Attached</p>
+                               <p className="text-lg text-slate-600 mb-6">{formData.attachmentName}</p>
+                               <button 
+                                onClick={handleRemoveFile}
+                                className="text-[10px] font-bold uppercase tracking-widest text-red-500 flex items-center gap-2 hover:bg-red-50 px-4 py-2 rounded-full transition-colors"
+                               >
+                                 <Trash2 size={14}/> Remove Attachment
+                               </button>
+                            </div>
+                          ) : (
+                            <div className="relative z-10">
+                              <FileUp className="w-16 h-16 text-slate-300 mx-auto mb-8 group-hover:text-[#CC1414] transition-colors group-hover:scale-110 duration-700" />
+                              <p className="text-2xl font-serif text-slate-900 mb-3">Proprietary RFP Document</p>
+                              <p className="text-[16px] text-slate-500 font-light mb-6">Click to select or drag and drop files here</p>
+                              <p className="text-[11px] text-slate-400 uppercase tracking-[0.3em] border border-slate-200 inline-block px-6 py-2.5 rounded-full bg-white shadow-sm">PDF, DOCX, XLSX up to 50MB</p>
+                            </div>
+                          )}
+                        </label>
                         <div className="bg-slate-50 p-8 md:p-10 flex items-start space-x-6 border-l-8 border-slate-900 shadow-sm">
                           <Shield className="w-8 h-8 text-slate-400 shrink-0 mt-1" />
                           <p className="text-sm md:text-[15px] text-slate-500 leading-relaxed font-light">

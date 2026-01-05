@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Shield, UserPlus, LogIn, Loader2, KeyRound, Mail } from 'lucide-react';
+import { X, Shield, UserPlus, LogIn, Loader2, KeyRound, Mail, CheckCircle, ArrowRight } from 'lucide-react';
 import { 
   signInWithEmailAndPassword, 
   signInWithPopup, 
@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from '../../firebase';
 import { contentService } from '../../services/contentService';
+import { emailService } from '../../services/emailService';
 import { UserProfile } from '../../types';
 
 interface AdminLoginProps {
@@ -22,9 +23,15 @@ interface AdminLoginProps {
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole = 'general' }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [otpMode, setOtpMode] = useState(false);
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [inputOtp, setInputOtp] = useState('');
+  
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
@@ -74,27 +81,59 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
 
     try {
       if (isSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
-        const user = userCredential.user;
-        
-        await updateProfile(user, { displayName: name });
-        
-        // Send Verification Email
-        await sendEmailVerification(user);
+        if (!otpMode) {
+          // PHASE 1: Generate OTP & Send Email
+          if (!name || !email || !password) {
+             setError("MANDATORY FIELDS MISSING. PLEASE COMPLETE DOSSIER.");
+             setLoading(false);
+             return;
+          }
 
-        const role = isAdminEmail ? 'admin' : intendedRole;
+          const code = Math.floor(100000 + Math.random() * 900000).toString();
+          setGeneratedOtp(code);
+          
+          try {
+            await emailService.sendVerificationOTP(normalizedEmail, name, code);
+            setOtpMode(true);
+            setSuccessMsg("SECURE CODE DISPATCHED. CHECK YOUR INBOX.");
+          } catch (mailErr) {
+            console.error("OTP Send Error", mailErr);
+            // Fallback for demo if email API fails (allow proceed with console OTP)
+            console.log(`DEV MODE OTP: ${code}`); 
+            setOtpMode(true);
+            setError("NETWORK WARNING: EMAIL SERVICE DELAYED. CHECK CONSOLE FOR DEV OTP.");
+          }
+          
+          setLoading(false);
+          return;
+        } else {
+          // PHASE 2: Verify OTP & Create Account
+          if (inputOtp !== generatedOtp) {
+             setError("AUTHENTICATION FAILED. INVALID SECURE CODE.");
+             setLoading(false);
+             return;
+          }
 
-        await contentService.saveUserProfile({
-          uid: user.uid,
-          email: user.email!,
-          name: name,
-          role: role as 'applicant' | 'general' | 'admin',
-          createdAt: new Date().toISOString()
-        });
-        
-        alert("Verification Protocol Initiated: A secure link has been sent to your email. Please verify your identity before accessing the matrix.");
-        onLogin();
+          const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+          const user = userCredential.user;
+          
+          await updateProfile(user, { displayName: name });
+          
+          const role = isAdminEmail ? 'admin' : intendedRole;
+
+          await contentService.saveUserProfile({
+            uid: user.uid,
+            email: user.email!,
+            name: name,
+            role: role as 'applicant' | 'general' | 'admin',
+            createdAt: new Date().toISOString()
+          });
+          
+          // No need to sendEmailVerification link anymore as we verified via OTP
+          onLogin();
+        }
       } else {
+        // LOGIN FLOW
         try {
           await signInWithEmailAndPassword(auth, normalizedEmail, password);
           onLogin();
@@ -208,56 +247,81 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
             </div>
             <div className="w-12 h-0.5 bg-slate-100"></div>
             <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">
-               {isSignUp ? (intendedRole === 'applicant' ? 'Recruitment Mandate' : 'Client Onboarding') : 'Authorized Access'}
+               {isSignUp ? (otpMode ? 'Identity Verification' : (intendedRole === 'applicant' ? 'Recruitment Mandate' : 'Client Onboarding')) : 'Authorized Access'}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-6">
-          {isSignUp && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Full Legal Name</label>
-              <input 
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
-                placeholder="Enter full name"
-              />
-            </div>
+          {otpMode ? (
+             <div className="space-y-6 animate-reveal-left">
+                <div className="bg-slate-50 border border-slate-100 p-6 rounded-sm text-center">
+                   <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Secure Code Sent To</p>
+                   <p className="text-lg font-serif text-slate-900">{email}</p>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Enter 6-Digit Code</label>
+                   <input 
+                     type="text"
+                     required
+                     value={inputOtp}
+                     onChange={(e) => setInputOtp(e.target.value.replace(/[^0-9]/g, '').slice(0,6))}
+                     className="w-full bg-slate-50 border border-slate-100 p-4 text-center text-3xl tracking-[0.5em] font-bold text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all rounded-sm placeholder:tracking-normal"
+                     placeholder="000000"
+                     autoFocus
+                   />
+                </div>
+                <p className="text-xs text-center text-slate-400 font-light">Please verify the OTP sent to your institutional email.</p>
+             </div>
+          ) : (
+            <>
+              {isSignUp && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Full Legal Name</label>
+                  <input 
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
+                    placeholder="Enter full name"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Email Address</label>
+                <input 
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
+                  placeholder="example@email.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                   <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Secure Key</label>
+                   {!isSignUp && (
+                     <button type="button" onClick={() => setShowForgotPassword(true)} className="text-[9px] font-bold tracking-widest uppercase text-[#CC1414] hover:text-slate-900 transition-colors">Forgot Key?</button>
+                   )}
+                </div>
+                <input 
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
+                  placeholder="••••••••"
+                />
+              </div>
+            </>
           )}
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Email Address</label>
-            <input 
-              type="text"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
-              placeholder="example@email.com"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-               <label className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Secure Key</label>
-               {!isSignUp && (
-                 <button type="button" onClick={() => setShowForgotPassword(true)} className="text-[9px] font-bold tracking-widest uppercase text-[#CC1414] hover:text-slate-900 transition-colors">Forgot Key?</button>
-               )}
-            </div>
-            <input 
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-100 p-4 text-slate-900 focus:border-[#CC1414] focus:outline-none transition-all font-light rounded-sm"
-              placeholder="••••••••"
-            />
-          </div>
-
           {error && <p className="text-[11px] text-red-600 font-bold uppercase tracking-wider text-center bg-red-50 p-4 border border-red-100 animate-reveal-up">{error}</p>}
+          {successMsg && <p className="text-[11px] text-green-600 font-bold uppercase tracking-wider text-center bg-green-50 p-4 border border-green-100 animate-reveal-up">{successMsg}</p>}
 
           <div className="space-y-4 pt-4">
             <button 
@@ -265,11 +329,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
               disabled={loading}
               className="w-full py-5 bg-slate-900 text-white text-[11px] font-bold tracking-[0.3em] uppercase hover:bg-[#CC1414] transition-all flex items-center justify-center gap-4 shadow-xl disabled:opacity-50 rounded-sm"
             >
-              {loading ? <Loader2 className="animate-spin" size={16}/> : (isSignUp ? <UserPlus size={16}/> : <LogIn size={16}/>)}
-              {loading ? 'PROCESSING...' : isSignUp ? 'CREATE ACCOUNT' : 'AUTHORIZE SESSION'} 
+              {loading ? <Loader2 className="animate-spin" size={16}/> : (otpMode ? <CheckCircle size={16}/> : isSignUp ? <ArrowRight size={16}/> : <LogIn size={16}/>)}
+              {loading ? 'PROCESSING...' : otpMode ? 'VERIFY & CREATE' : isSignUp ? 'SEND VERIFICATION' : 'AUTHORIZE SESSION'} 
             </button>
 
-            {!loading && (
+            {!loading && !otpMode && (
               <button 
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
@@ -278,21 +342,35 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose, intendedRole 
                 {isSignUp ? 'Already have a mandate? Sign In' : 'New to the chambers? Request Dossier'}
               </button>
             )}
+            
+            {otpMode && !loading && (
+               <button 
+                type="button"
+                onClick={() => { setOtpMode(false); setInputOtp(''); setError(''); setSuccessMsg(''); }}
+                className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors"
+              >
+                Cancel Verification
+              </button>
+            )}
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-              <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold text-slate-300 bg-white px-4">Secure Integration</div>
-            </div>
+            {!otpMode && (
+              <>
+                <div className="relative py-4">
+                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+                  <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold text-slate-300 bg-white px-4">Secure Integration</div>
+                </div>
 
-            <button 
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-5 border border-slate-200 text-slate-900 text-[11px] font-bold tracking-[0.3em] uppercase hover:border-[#CC1414] hover:text-[#CC1414] transition-all flex items-center justify-center gap-4 shadow-sm active:scale-95 disabled:opacity-50 rounded-sm"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" className="w-5 h-5" alt="Google" />
-              Liaison via Google
-            </button>
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-full py-5 border border-slate-200 text-slate-900 text-[11px] font-bold tracking-[0.3em] uppercase hover:border-[#CC1414] hover:text-[#CC1414] transition-all flex items-center justify-center gap-4 shadow-sm active:scale-95 disabled:opacity-50 rounded-sm"
+                >
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" className="w-5 h-5" alt="Google" />
+                  Liaison via Google
+                </button>
+              </>
+            )}
           </div>
         </form>
 

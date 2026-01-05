@@ -126,7 +126,7 @@ const generateExecutiveTemplate = (
                     <div class="overview-box">
                         <span class="overview-label">${overviewTitle}</span>
                         <div class="overview-content">
-                            "${overviewBody}"
+                            ${overviewBody}
                         </div>
                     </div>
 
@@ -237,6 +237,25 @@ export const emailService = {
   },
 
   /**
+   * Send OTP for Account Verification
+   */
+  sendVerificationOTP: async (email: string, name: string, otp: string) => {
+    const richOtpContent = `<div style="text-align: center; margin: 30px 0;"><span style="font-family: 'Helvetica Neue', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #CC1414; background: #ffffff; padding: 20px 40px; display: inline-block; border: 2px solid #000000; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">${otp}</span></div><br>This One-Time Password (OTP) is required to authorize the creation of your client mandate dossier. It ensures the security of the communication channel. Do not share this credential.`;
+
+    const html = generateExecutiveTemplate(
+      "Identity Verification Required",
+      name,
+      "We have received a request to establish a secure channel with this email address.",
+      "Authentication Code",
+      richOtpContent,
+      "https://www.thetaxjournal.in",
+      "SECURE CHANNEL"
+    );
+
+    await emailService.send(email, `Action Required: Verification Code ${otp}`, html);
+  },
+
+  /**
    * Send confirmation for Consultation/Booking
    */
   sendBookingConfirmation: async (data: any) => {
@@ -247,7 +266,7 @@ export const emailService = {
       year: 'numeric'
     });
 
-    const overviewBody = `We confirm that your request for a strategic consultation has been logged in our secure matrix. A Senior Partner has been notified of this engagement.\n\nReference ID: ${uniqueId}\nLocation: ${branch} Chamber`;
+    const overviewBody = `"We confirm that your request for a strategic consultation has been logged in our secure matrix. A Senior Partner has been notified of this engagement.\n\nReference ID: ${uniqueId}\nLocation: ${branch} Chamber"`;
 
     const html = generateExecutiveTemplate(
       "Mandate Authorized",
@@ -277,21 +296,44 @@ export const emailService = {
   /**
    * Send confirmation for RFP submission
    * Matches specific user request for "Proposal Transmission Received" look.
+   * Uses dynamic data from the form.
    */
   sendRFPConfirmation: async (data: any) => {
-    const { firstName, lastName, email, organization, category } = data;
+    const { firstName, lastName, email, organization, category, summary, industry, spend, phone, attachmentName } = data;
     const fullName = `${firstName} ${lastName}`;
 
-    const introText = `We have successfully received your strategic proposal request regarding <strong>${category}</strong> for <strong>AK PANDEY AND ASSOCIATES</strong>.`;
+    const introText = `We have successfully received your Request for Proposal regarding <strong>${category}</strong> for <strong>${organization}</strong>.`;
     
-    // Using simple line breaks or <br> in the overview body if needed, but the CSS handles formatting.
-    const overviewBody = `Dear Sir/Madam, I hope this message finds you well. I am writing to formally enquire about AK Pandey's ${category} services. We are currently evaluating professional audit support for our organization and are keen to understand how AK Pandey can assist us with high-quality, compliant, and value-driven assurance solutions. Specifically, we would appreciate details on the following:<br><br>• Scope and coverage of statutory audit, internal audit, and assurance services.<br>• Industry expertise and sector-specific audit experience.<br>• Approach to risk assessment, internal controls, and regulatory compliance.`;
+    // Dynamic Overview Body using user-filled data
+    const overviewBody = `
+      <p style="margin-bottom: 20px; font-weight: 700; color: #cc1414; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">CLIENT RFP DIRECTIVE:</p>
+      <p style="margin-bottom: 20px; font-style: italic;">"${summary}"</p>
+      
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-top: 1px solid #e2e8f0; margin-top: 10px;">
+        <tr>
+          <td style="padding: 12px 0; font-size: 13px; color: #555; border-bottom: 1px solid #e2e8f0;"><strong>Industry Sector:</strong></td>
+          <td style="padding: 12px 0; font-size: 13px; color: #111; border-bottom: 1px solid #e2e8f0; text-align: right;">${industry}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; font-size: 13px; color: #555; border-bottom: 1px solid #e2e8f0;"><strong>Est. Legal Spend:</strong></td>
+          <td style="padding: 12px 0; font-size: 13px; color: #111; border-bottom: 1px solid #e2e8f0; text-align: right;">${spend}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; font-size: 13px; color: #555; border-bottom: 1px solid #e2e8f0;"><strong>Direct Contact:</strong></td>
+          <td style="padding: 12px 0; font-size: 13px; color: #111; border-bottom: 1px solid #e2e8f0; text-align: right;">${phone || 'N/A'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; font-size: 13px; color: #555;"><strong>Attachment:</strong></td>
+          <td style="padding: 12px 0; font-size: 13px; color: #111; text-align: right;">${attachmentName || 'None'}</td>
+        </tr>
+      </table>
+    `;
 
     const html = generateExecutiveTemplate(
       "Proposal Transmission Received.",
       fullName,
       introText,
-      "Engagement Overview",
+      "Proposal Scope",
       overviewBody,
       "https://www.thetaxjournal.in/dashboard",
       "VIEW RFP STATUS"
@@ -300,7 +342,7 @@ export const emailService = {
     // 1. Send to Client
     await emailService.send(
       email,
-      `RFP Received: Strategic Partnership Mandate`,
+      `RFP Received: ${category} - ${organization}`,
       html
     );
 
@@ -308,7 +350,7 @@ export const emailService = {
     await emailService.send(
       ADMIN_EMAIL,
       `NEW RFP: ${organization}`,
-      `RFP Category: ${category}<br>Contact: ${fullName} (${email})`
+      `RFP Category: ${category}<br>Contact: ${fullName} (${email})<br>Summary: ${summary}`
     );
   },
 
@@ -327,7 +369,7 @@ export const emailService = {
       </div>
     `;
 
-    const overviewBody = `Your credentials for the position of ${jobTitle} have been securely filed in our candidate matrix. The Recruitment Board will review your academic and professional history shortly.<br><br><strong>Submitted Dossier Summary:</strong>${detailsHtml}`;
+    const overviewBody = `"Your credentials for the position of ${jobTitle} have been securely filed in our candidate matrix. The Recruitment Board will review your academic and professional history shortly."<br><br><strong>Submitted Dossier Summary:</strong>${detailsHtml}`;
 
     const html = generateExecutiveTemplate(
       "Dossier Filed Successfully.",
@@ -370,12 +412,12 @@ export const emailService = {
        subject = `Interview Invitation: ${jobTitle}`;
        headline = "Candidate Shortlisted";
        introText = `Following a review of your dossier, we are pleased to invite you to the interview stage for <strong>${jobTitle}</strong>.`;
-       overviewBody = `Your profile has been flagged for potential strategic alignment with our firm's values. A member of our Recruitment Board will contact you within 24 hours to schedule the formal interaction. Please ensure your documentation is ready for verification.`;
+       overviewBody = `"Your profile has been flagged for potential strategic alignment with our firm's values. A member of our Recruitment Board will contact you within 24 hours to schedule the formal interaction. Please ensure your documentation is ready for verification."`;
     } else if (status === 'Rejected') {
        subject = `Application Status Update: ${jobTitle}`;
        headline = "Recruitment Board Decision";
        introText = `We appreciate the time you invested in applying for the <strong>${jobTitle}</strong> position.`;
-       overviewBody = `After careful consideration of your credentials against our current strategic requirements, we have decided not to proceed with your application at this time. We will keep your dossier in our secure matrix for future opportunities that align with your expertise.`;
+       overviewBody = `"After careful consideration of your credentials against our current strategic requirements, we have decided not to proceed with your application at this time. We will keep your dossier in our secure matrix for future opportunities that align with your expertise."`;
        ctaText = "VIEW OTHER ROLES";
     }
 
