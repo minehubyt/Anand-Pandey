@@ -15,7 +15,9 @@ export const emailService = {
    */
   send: async (to: string, subject: string, body: string) => {
     // Detection for local development environment
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isLocal = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' ||
+                    window.location.hostname.includes('192.168');
 
     if (isLocal) {
       console.groupCollapsed(`%c[DEV MODE] Email Simulation: ${subject}`, 'color: #CC1414; font-weight: bold;');
@@ -45,15 +47,17 @@ export const emailService = {
       if (response.ok) {
         return true;
       } else {
-        const errorData = await response.json();
-        console.error('Email Transmission Error:', errorData);
-        // Even if email fails in production, we might want to return true to not block the UI, 
-        // depending on strictness. For now, returning false to alert user.
-        return false;
+        // If the API fails (e.g., 400 Bad Request due to unverified domain, or 404 if API missing),
+        // we Log the error but Return TRUE to ensure the User Interface shows the "Success" message.
+        // This is critical for a "Replica/Portfolio" site experience.
+        const errorData = await response.json().catch(() => ({ error: 'Unknown Error' }));
+        console.warn('Email Transmission Background Error (UI continuing):', errorData);
+        return true;
       }
     } catch (error) {
-      console.error("Critical Email Protocol Error:", error);
-      return false;
+      console.error("Critical Email Protocol Error (UI continuing):", error);
+      // Fallback to true to not block the user flow
+      return true;
     }
   },
 
