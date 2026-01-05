@@ -1,37 +1,38 @@
 
-import { Resend } from 'resend';
-
 /**
  * AK PANDEY & ASSOCIATES | STRATEGIC EMAIL PROTOCOL
  * 
- * Uses Resend SDK for email transmissions.
+ * Uses internal Serverless Function (/api/send) to securely transmit emails via Resend.
+ * This prevents CORS errors and protects the API key.
  */
 
-// Provided Resend API Key
-const resend = new Resend('re_Z8WRHBCj_3fapsCSGcSX6j2G6b6uzzG5m');
-
 const ADMIN_EMAIL = 'admin@anandpandey.in';
-const SENDER_EMAIL = 'onboarding@resend.dev'; // Default Resend sender for testing
 
 export const emailService = {
   /**
-   * Sends an email using the Resend SDK.
+   * Sends an email by calling the Vercel Serverless Function.
    */
   send: async (to: string, subject: string, body: string) => {
     try {
-      const { data, error } = await resend.emails.send({
-        from: SENDER_EMAIL,
-        to: to,
-        subject: subject,
-        html: body.replace(/\n/g, '<br>')
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          html: body.replace(/\n/g, '<br>')
+        })
       });
 
-      if (error) {
-        console.error('Resend Transmission Error:', error);
+      if (response.ok) {
+        return true;
+      } else {
+        const errorData = await response.json();
+        console.error('Email Transmission Error:', errorData);
         return false;
       }
-      
-      return true;
     } catch (error) {
       console.error("Critical Email Protocol Error:", error);
       return false;
