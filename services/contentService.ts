@@ -31,9 +31,11 @@ const COLLECTIONS = {
 export const contentService = {
   seedData: async () => {
     try {
+      // 1. Seed Hero
       const heroRef = doc(db, COLLECTIONS.HERO, 'main');
       const heroSnap = await getDoc(heroRef);
       if (!heroSnap.exists()) {
+        console.log("Seeding Hero Data...");
         await setDoc(heroRef, {
           headline: "Strategic Legal Counsel for a Complex World",
           subtext: "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
@@ -41,8 +43,101 @@ export const contentService = {
           ctaText: "DISCUSS MANDATE"
         });
       }
+
+      // 2. Seed Insights (if empty)
+      const insightsRef = collection(db, COLLECTIONS.INSIGHTS);
+      const insightsSnap = await getDocs(insightsRef);
+      if (insightsSnap.empty) {
+        console.log("Seeding Insights Data...");
+        const sampleInsights = [
+          {
+            type: 'insights',
+            category: 'LEGAL UPDATE',
+            title: "The Future of AI Regulation in India",
+            desc: "Analyzing the proposed Digital India Act and its impact on large language models and generative AI enterprises.",
+            date: new Date().toISOString(),
+            image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=800",
+            isFeatured: true,
+            showInHero: true
+          },
+          {
+            type: 'reports',
+            category: 'ANNUAL REPORT',
+            title: "Global Litigation Trends 2025",
+            desc: "A comprehensive review of cross-border dispute resolution mechanisms and the rise of commercial arbitration.",
+            date: new Date(Date.now() - 86400000 * 2).toISOString(),
+            image: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=800",
+            isFeatured: true,
+            showInHero: false
+          },
+          {
+            type: 'casestudy',
+            category: 'CASE STUDY',
+            title: "Infrastructure Arbitration Victory",
+            desc: "Securing a ₹500 Cr award for a leading construction conglomerate against a state entity.",
+            date: new Date(Date.now() - 86400000 * 5).toISOString(),
+            image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800",
+            isFeatured: false,
+            showInHero: false
+          },
+          {
+             type: 'podcasts',
+             category: 'LEGAL PODCAST',
+             title: "Ep 4: White Collar Defense Strategies",
+             desc: "A deep dive into PMLA provisions and defense tactics with Senior Counsel AK Pandey.",
+             date: new Date(Date.now() - 86400000 * 10).toISOString(),
+             image: "https://images.unsplash.com/photo-1478737270239-2f02b77ac618?auto=format&fit=crop&q=80&w=800",
+             season: "1",
+             episode: "4",
+             isFeatured: false,
+             showInHero: true
+          }
+        ];
+        for (const item of sampleInsights) {
+          await addDoc(insightsRef, item);
+        }
+      }
+
+      // 3. Seed Jobs
+      const jobsRef = collection(db, COLLECTIONS.JOBS);
+      const jobsSnap = await getDocs(jobsRef);
+      if (jobsSnap.empty) {
+         console.log("Seeding Jobs Data...");
+         await addDoc(jobsRef, {
+            title: "Senior Associate - Litigation",
+            department: "Litigation",
+            location: "New Delhi",
+            description: "Seeking an experienced litigator with 5+ years of High Court practice.",
+            postedDate: new Date().toISOString(),
+            status: "active"
+         });
+      }
+
+      // 4. Seed Offices
+      const officesRef = collection(db, COLLECTIONS.OFFICES);
+      const officesSnap = await getDocs(officesRef);
+      if (officesSnap.empty) {
+         console.log("Seeding Offices Data...");
+         await addDoc(officesRef, {
+            city: 'New Delhi',
+            address: 'High Court Chambers, Shanti Path, New Delhi, 110001',
+            phone: '+91 11 2345 6789',
+            email: 'delhi@anandpandey.in',
+            coordinates: { lat: 28.6139, lng: 77.2090 },
+            image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200'
+         });
+         await addDoc(officesRef, {
+            city: 'Ranchi',
+            address: '2nd Floor, Tara Kunj Complex, Khelgoan Chowk, Ranchi, Jharkhand - 835217',
+            phone: '+91 91101 5484',
+            email: 'ranchi@anandpandey.in',
+            coordinates: { lat: 23.3750, lng: 85.3550 },
+            image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1200'
+         });
+      }
+
     } catch (err) {
-      console.debug("Seed error:", err);
+      console.error("Content Seeding Error:", err);
     }
   },
 
@@ -58,7 +153,7 @@ export const contentService = {
   subscribeHero: (callback: (hero: HeroContent) => void) => {
     return onSnapshot(doc(db, COLLECTIONS.HERO, 'main'), (docSnap) => {
       if (docSnap.exists()) callback({ id: docSnap.id, ...docSnap.data() } as HeroContent);
-    });
+    }, (error) => console.error("Hero Subscription Error:", error));
   },
 
   saveHero: async (hero: Partial<HeroContent>) => {
@@ -66,15 +161,16 @@ export const contentService = {
       await setDoc(doc(db, COLLECTIONS.HERO, 'main'), hero, { merge: true });
     } catch (error) {
       console.error("Firestore Hero Save Error:", error);
-      throw error; // Re-throw to be caught by UI
+      throw error; 
     }
   },
 
   subscribeJobs: (callback: (jobs: Job[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.JOBS), where('status', '==', 'active'));
-    return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Job)));
-    });
+    // Client-side filtering to avoid index requirements
+    return onSnapshot(collection(db, COLLECTIONS.JOBS), (snapshot) => {
+      const allJobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Job));
+      callback(allJobs.filter(j => j.status === 'active'));
+    }, (error) => console.error("Jobs Subscription Error:", error));
   },
 
   saveJob: async (job: Job) => {
@@ -88,11 +184,12 @@ export const contentService = {
   },
 
   subscribeUserApplications: (userId: string, callback: (apps: JobApplication[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.APPLICATIONS), where('userId', '==', userId));
-    return onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as JobApplication));
-      data.sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
-      callback(data);
+    // Client-side filtering
+    return onSnapshot(collection(db, COLLECTIONS.APPLICATIONS), (snapshot) => {
+      const allApps = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as JobApplication));
+      const userApps = allApps.filter(a => a.userId === userId);
+      userApps.sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime());
+      callback(userApps);
     });
   },
 
@@ -111,25 +208,31 @@ export const contentService = {
   },
 
   subscribeInsights: (callback: (insights: Insight[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.INSIGHTS), orderBy('date', 'desc'));
-    return onSnapshot(q, (snapshot) => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight))));
+    // REMOVED 'orderBy' to prevent missing index errors. Sorting done client-side.
+    return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
+      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(data);
+    }, (error) => console.error("Insights Subscription Error:", error));
   },
   
   subscribeHeroInsights: (callback: (insights: Insight[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.INSIGHTS), where('showInHero', '==', true));
-    return onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
-      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      callback(data);
-    });
+    // Client-side filtering for hero visibility
+    return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
+      const allInsights = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
+      const heroItems = allInsights.filter(i => i.showInHero === true);
+      heroItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(heroItems);
+    }, (error) => console.error("Hero Insights Subscription Error:", error));
   },
   
   subscribeFeaturedInsights: (callback: (insights: Insight[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.INSIGHTS), where('isFeatured', '==', true));
-    return onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
-      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      callback(data);
+    // Client-side filtering for featured items
+    return onSnapshot(collection(db, COLLECTIONS.INSIGHTS), (snapshot) => {
+      const allInsights = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
+      const featuredItems = allInsights.filter(i => i.isFeatured === true);
+      featuredItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(featuredItems);
     });
   },
   
@@ -170,16 +273,21 @@ export const contentService = {
   deleteOffice: async (id: string) => await deleteDoc(doc(db, COLLECTIONS.OFFICES, id)),
 
   subscribeInquiries: (callback: (inquiries: Inquiry[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.INQUIRIES), orderBy('date', 'desc'));
-    return onSnapshot(q, (snapshot) => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry))));
-  },
-
-  subscribeUserInquiries: (userId: string, callback: (inquiries: Inquiry[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.INQUIRIES), where('userId', '==', userId));
-    return onSnapshot(q, (snapshot) => {
+    // Client-side sort
+    return onSnapshot(collection(db, COLLECTIONS.INQUIRIES), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry));
       data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       callback(data);
+    });
+  },
+
+  subscribeUserInquiries: (userId: string, callback: (inquiries: Inquiry[]) => void) => {
+    // Client-side filtering
+    return onSnapshot(collection(db, COLLECTIONS.INQUIRIES), (snapshot) => {
+      const all = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry));
+      const userInquiries = all.filter(i => i.userId === userId);
+      userInquiries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(userInquiries);
     });
   },
   

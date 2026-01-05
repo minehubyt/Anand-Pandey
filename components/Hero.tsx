@@ -1,81 +1,50 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { contentService } from '../services/contentService';
 import { Insight, HeroContent } from '../types';
 
 const Hero: React.FC = () => {
-  // Initial state has default data to ensure banner appears immediately
-  const [slides, setSlides] = useState<any[]>([
-    {
-      id: 'main-hero',
-      title: "Strategic Legal Counsel for a Complex World",
-      desc: "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
-      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
-      category: 'STRATEGIC BRIEFING',
-      ctaText: "DISCUSS MANDATE"
-    }
-  ]);
+  // Separate state for the main configuration and the dynamic insights
+  const [heroConfig, setHeroConfig] = useState<HeroContent | null>(null);
+  const [heroInsights, setHeroInsights] = useState<Insight[]>([]);
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Subscribe to data streams independently
   useEffect(() => {
-    // We maintain local variables to merge streams from hero config and insights
-    // We initialize with default values to prevent any flash of empty content
-    let heroContent: any = {
-      headline: "Strategic Legal Counsel for a Complex World",
-      subtext: "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
-      backgroundImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
-      ctaText: "DISCUSS MANDATE"
-    };
-    let insightSlides: any[] = [];
-
-    const updateSlides = () => {
-      const mainSlide = {
-        id: 'main-hero',
-        title: heroContent.headline || heroContent.title || "Strategic Legal Counsel",
-        desc: heroContent.subtext || heroContent.desc || "Precise strategy for complex mandates.",
-        image: heroContent.backgroundImage || heroContent.image || "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
-        category: 'STRATEGIC BRIEFING',
-        ctaText: heroContent.ctaText || 'VIEW NOW'
-      };
-      
-      const additionalSlides = insightSlides.map(item => ({
-        id: item.id,
-        title: item.title,
-        desc: item.desc,
-        image: item.bannerImage || item.image,
-        category: item.category || 'INSIGHT',
-        ctaText: 'VIEW NOW'
-      }));
-
-      // Always ensure at least one slide exists
-      setSlides([mainSlide, ...additionalSlides]);
-    };
-
-    const unsubHero = contentService.subscribeHero((mainHero) => {
-      if (mainHero) {
-        heroContent = { ...heroContent, ...mainHero };
-        updateSlides();
-      }
-    });
-
-    const unsubInsights = contentService.subscribeHeroInsights((heroInsights) => {
-      if (heroInsights) {
-        insightSlides = heroInsights;
-        updateSlides();
-      }
-    });
-
-    // Initial update to ensure default content is rendered if subscriptions are slow
-    updateSlides();
-
+    const unsubHero = contentService.subscribeHero(setHeroConfig);
+    const unsubInsights = contentService.subscribeHeroInsights(setHeroInsights);
     return () => {
       unsubHero();
       unsubInsights();
     };
   }, []);
+
+  // Combine data into a single slides array whenever sources change
+  const slides = useMemo(() => {
+    const defaultSlide = {
+      id: 'main-hero',
+      title: heroConfig?.headline || "Strategic Legal Counsel for a Complex World",
+      desc: heroConfig?.subtext || "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
+      image: heroConfig?.backgroundImage || "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
+      category: 'STRATEGIC BRIEFING',
+      ctaText: heroConfig?.ctaText || "DISCUSS MANDATE"
+    };
+
+    const insightSlides = heroInsights.map(item => ({
+      id: item.id,
+      title: item.title,
+      desc: item.desc,
+      image: item.bannerImage || item.image,
+      category: item.category || 'INSIGHT',
+      ctaText: 'VIEW NOW'
+    }));
+
+    return [defaultSlide, ...insightSlides];
+  }, [heroConfig, heroInsights]);
 
   const nextSlide = useCallback(() => {
     if (slides.length <= 1) return;
@@ -109,7 +78,7 @@ const Hero: React.FC = () => {
       {/* Background Images Layer */}
       {slides.map((slide, idx) => (
         <div 
-          key={`${slide.id}-bg-${idx}-${slide.image?.substring(0, 20)}`} // Force re-render on image change
+          key={`${slide.id}-bg-${idx}-${slide.image?.substring(0, 20)}`}
           className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
           <img
@@ -143,7 +112,7 @@ const Hero: React.FC = () => {
                 <button
                   className="group relative flex items-center gap-4 text-[13px] font-bold tracking-[0.3em] uppercase text-white py-2"
                 >
-                  <span className="relative z-10">{slide.ctaText || 'VIEW NOW'}</span>
+                  <span className="relative z-10">{slide.ctaText}</span>
                   <div className="w-10 h-px bg-[#CC1414] group-hover:w-16 transition-all duration-700"></div>
                 </button>
               </div>
