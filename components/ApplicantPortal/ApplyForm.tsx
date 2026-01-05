@@ -113,21 +113,24 @@ const ApplyForm: React.FC<ApplyFormProps> = ({ job, onClose, onSuccess }) => {
     };
 
     try {
+      // 1. Submit Data (Fast)
       await contentService.submitApplication(app);
       
-      // Trigger Strategic Email Communication with FULL details
-      await emailService.sendApplicationConfirmation({
+      // 2. Trigger Strategic Email (Background / Fire-and-Forget)
+      // We do NOT await this, so the UI completes instantly.
+      emailService.sendApplicationConfirmation({
         name: formData.name,
         email: formData.email,
         jobTitle: job.title,
         formData: formData // Passing full data for email body
-      });
+      }).catch(err => console.error("Background email send failed:", err));
       
       setLoading(false);
       onSuccess();
     } catch (err) {
       console.error('Submission Error:', err);
       setLoading(false);
+      alert("Submission encountered an error. Please try again.");
     }
   };
 

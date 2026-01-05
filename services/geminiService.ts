@@ -42,7 +42,7 @@ export const parseResume = async (base64Data: string, mimeType: string) => {
     const rawBase64 = dataParts.length > 1 ? dataParts[1] : dataParts[0];
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-latest",
+      model: "gemini-2.0-flash-exp",
       contents: [
         {
           role: "user",
