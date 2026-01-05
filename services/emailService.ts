@@ -176,20 +176,8 @@ export const emailService = {
    * it returns TRUE to ensure the UI Demo Experience is not interrupted.
    */
   send: async (to: string, subject: string, body: string, replyTo?: string) => {
-    // 1. Immediate simulation for obvious local environments to save network calls
-    const isLocal = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1';
-
-    if (isLocal) {
-      console.groupCollapsed(`%c[DEV MODE] Email Simulation: ${subject}`, 'color: #CC1414; font-weight: bold;');
-      console.log('To:', to);
-      console.log('Body HTML:', body); // HTML for debugging
-      console.groupEnd();
-      await new Promise(resolve => setTimeout(resolve, 800)); // Cinematic delay
-      return true;
-    }
-
-    // 2. Attempt Real Transmission
+    
+    // Attempt Real Transmission without checking for localhost
     try {
       const response = await fetch('/api/send', {
         method: 'POST',
@@ -204,8 +192,9 @@ export const emailService = {
         })
       });
 
-      // 3. Handle API Responses
+      // Handle API Responses
       if (response.ok) {
+        console.log(`Email dispatched successfully to ${to}`);
         return true;
       } else {
         // Handle expected errors gracefully for a Demo/Portfolio site
@@ -213,7 +202,7 @@ export const emailService = {
           console.warn('Email API Endpoint (/api/send) not found. This is expected if running on a static host or local vite server without Vercel functions.');
         } else if (response.status === 400) {
           const err = await response.json();
-          console.warn('Resend API Restricted (Free Tier): Can only send to verified email. UI will proceed as success.', err);
+          console.warn('Resend API Warning: Free tier limitation or invalid email. UI will proceed as success.', err);
         } else {
           console.warn(`Email API returned status: ${response.status}`);
         }
@@ -222,7 +211,7 @@ export const emailService = {
         return true;
       }
     } catch (error) {
-      // 4. Handle Network/CORS Errors
+      // Handle Network/CORS Errors
       console.warn("Email Protocol Network Error (CORS/Offline). Proceeding with UI simulation.", error);
       return true;
     }
@@ -274,7 +263,8 @@ export const emailService = {
     await emailService.send(
       email,
       `Mandate Authorized: Consultation ${uniqueId}`,
-      html
+      html,
+      'admin@thetaxjournal.in' // Reply-to
     );
 
     // 2. Send to Admin (Modified subject line to be less spammy)
@@ -336,7 +326,8 @@ export const emailService = {
     await emailService.send(
       email,
       `RFP Received: ${category} - ${organization}`,
-      html
+      html,
+      'admin@thetaxjournal.in' // Reply-to
     );
 
     // 2. Send to Admin
@@ -379,7 +370,8 @@ export const emailService = {
     await emailService.send(
       email,
       `Dossier Authorized: ${jobTitle}`,
-      html
+      html,
+      'careers@thetaxjournal.in' // Reply-to for candidates
     );
 
     // 2. Send to Admin
@@ -427,7 +419,7 @@ export const emailService = {
         ctaText
       );
 
-      await emailService.send(email, subject, html);
+      await emailService.send(email, subject, html, 'careers@thetaxjournal.in');
     }
   }
 };

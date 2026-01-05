@@ -196,18 +196,25 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     // 1. Capture snapshot for background task
     const appToUpdate = { ...selectedApp };
     const appId = appToUpdate.id;
-    const applicantName = appToUpdate.data.personal.name;
-    const applicantEmail = appToUpdate.data.personal.email;
+    const applicantName = appToUpdate.data?.personal?.name || 'Candidate';
+    const applicantEmail = appToUpdate.data?.personal?.email;
     const jobTitle = appToUpdate.jobTitle;
 
-    // 2. INSTANT UI FEEDBACK
+    // 2. INSTANT UI FEEDBACK (OPTIMISTIC UPDATE)
+    // Update the applications list locally immediately
+    setApplications(prev => prev.map(app => 
+        app.id === appId ? { ...app, status: status } : app
+    ));
+    
     // Close the modal immediately so the user isn't stuck waiting.
     setSelectedApp(null);
     
-    // 3. Optional: Show a non-blocking toast (using alert for now as requested by simplicity, but executing AFTER state update)
-    // setTimeout(() => alert(`Candidate moved to '${status}'. Notification dispatched.`), 100);
+    if (!applicantEmail) {
+        console.error("Cannot send email: Candidate email is missing.");
+        return;
+    }
 
-    // 4. Background Process (Fire and Forget)
+    // 3. Background Process (Fire and Forget)
     (async () => {
         try {
             // Update Database
@@ -223,8 +230,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
             console.log(`Background status update complete for ${applicantName}`);
         } catch (err) {
             console.error("Background Status Update Failed (Check Console)", err);
-            // We do not alert here to avoid jarring the user later. 
-            // The UI is already updated optimistically via local state or subscription.
+            // Revert local state if DB update fails (optional, but good practice)
+            // For now, we assume success to keep UI snappy.
         }
     })();
   };

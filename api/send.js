@@ -35,9 +35,9 @@ export default async function handler(req, res) {
 
     // Attempt to send email
     const { data, error } = await resend.emails.send({
-      from: 'AK Pandey & Associates <noreply@thetaxjournal.in>',
+      from: 'AK Pandey Recruitment Board <onboarding@resend.dev>', // SAFE SENDER FOR UNVERIFIED DOMAINS
       to: to,
-      reply_to: replyTo || 'admin@anandpandey.in', // Essential for reputation
+      reply_to: replyTo || 'admin@thetaxjournal.in', // Essential for reputation
       subject: subject,
       html: html,
       text: textVersion, // fallback for spam filters
