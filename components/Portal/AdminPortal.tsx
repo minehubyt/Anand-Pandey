@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, FileText, Users, MapPin, 
@@ -244,7 +243,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                        <ImagePicker 
                           label="Thumbnail / Portrait" 
                           value={activeEntity.image} 
-                          onChange={v => setActiveEntity({...activeEntity, image: v})} 
+                          onChange={(v: string) => setActiveEntity({...activeEntity, image: v})} 
                           isDark={isDarkMode} 
                        />
                      )}
@@ -253,7 +252,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                         <ImagePicker 
                           label="Banner / Hero Backdrop" 
                           value={activeEntity.bannerImage} 
-                          onChange={v => setActiveEntity({...activeEntity, bannerImage: v})} 
+                          onChange={(v: string) => setActiveEntity({...activeEntity, bannerImage: v})} 
                           isDark={isDarkMode} 
                           wide
                         />
@@ -290,7 +289,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                   {/* Right Column: Content Matrix */}
                   <div className="lg:col-span-8 space-y-8">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <InputField label="Primary Title" value={activeEntity.title || activeEntity.name} onChange={v => setActiveEntity({...activeEntity, [activeEntity.name !== undefined ? 'name' : 'title']: v})} isDark={isDarkMode} />
+                        <InputField label="Primary Title" value={activeEntity.title || activeEntity.name} onChange={(v: string) => setActiveEntity({...activeEntity, [activeEntity.name !== undefined ? 'name' : 'title']: v})} isDark={isDarkMode} />
                         
                         {activeTab === 'jobs' ? (
                            <div className="space-y-4">
@@ -307,48 +306,48 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                               </select>
                            </div>
                         ) : (
-                           <InputField label="Category / Role" value={activeEntity.category || activeEntity.title} onChange={v => setActiveEntity({...activeEntity, [activeEntity.category !== undefined ? 'category' : 'title']: v})} isDark={isDarkMode} />
+                           <InputField label="Category / Role" value={activeEntity.category || activeEntity.title} onChange={(v: string) => setActiveEntity({...activeEntity, [activeEntity.category !== undefined ? 'category' : 'title']: v})} isDark={isDarkMode} />
                         )}
                      </div>
 
                      {activeTab === 'jobs' && (
-                        <InputField label="Location (City/Branch)" value={activeEntity.location} onChange={v => setActiveEntity({...activeEntity, location: v})} isDark={isDarkMode} icon={<MapPin size={16}/>} />
+                        <InputField label="Location (City/Branch)" value={activeEntity.location} onChange={(v: string) => setActiveEntity({...activeEntity, location: v})} isDark={isDarkMode} icon={<MapPin size={16}/>} />
                      )}
 
                      {activeTab === 'podcasts' && (
                        <div className="grid grid-cols-2 gap-8 p-8 bg-blue-50/10 border border-blue-500/20 rounded-2xl">
-                          <InputField label="Season" value={activeEntity.season} onChange={v => setActiveEntity({...activeEntity, season: v})} isDark={isDarkMode} />
-                          <InputField label="Episode" value={activeEntity.episode} onChange={v => setActiveEntity({...activeEntity, episode: v})} isDark={isDarkMode} />
+                          <InputField label="Season" value={activeEntity.season} onChange={(v: string) => setActiveEntity({...activeEntity, season: v})} isDark={isDarkMode} />
+                          <InputField label="Episode" value={activeEntity.episode} onChange={(v: string) => setActiveEntity({...activeEntity, episode: v})} isDark={isDarkMode} />
                           <div className="col-span-2">
-                             <FileUploader label="Audio Source (.mp3)" value={activeEntity.audioUrl} onChange={v => setActiveEntity({...activeEntity, audioUrl: v})} icon={<Music/>} />
+                             <FileUploader label="Audio Source (.mp3)" value={activeEntity.audioUrl} onChange={(v: string) => setActiveEntity({...activeEntity, audioUrl: v})} icon={<Music/>} />
                           </div>
                        </div>
                      )}
 
                      {activeTab === 'reports' && (
                        <div className="p-8 bg-red-50/10 border border-red-500/20 rounded-2xl">
-                          <FileUploader label="PDF Document (.pdf)" value={activeEntity.pdfUrl} onChange={v => setActiveEntity({...activeEntity, pdfUrl: v})} icon={<FileUp/>} />
+                          <FileUploader label="PDF Document (.pdf)" value={activeEntity.pdfUrl} onChange={(v: string) => setActiveEntity({...activeEntity, pdfUrl: v})} icon={<FileUp/>} />
                        </div>
                      )}
 
                      {activeTab === 'authors' && (
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 bg-slate-50/30 rounded-2xl">
-                          <InputField label="LinkedIn URL" value={activeEntity.linkedin} onChange={v => setActiveEntity({...activeEntity, linkedin: v})} isDark={isDarkMode} icon={<Linkedin size={16}/>} />
-                          <InputField label="WhatsApp Contact" value={activeEntity.whatsapp} onChange={v => setActiveEntity({...activeEntity, whatsapp: v})} isDark={isDarkMode} icon={<MessageCircle size={16}/>} />
-                          <InputField label="Official Email" value={activeEntity.email} onChange={v => setActiveEntity({...activeEntity, email: v})} isDark={isDarkMode} icon={<Mail size={16}/>} />
-                          <InputField label="Qualifications" value={activeEntity.qualifications} onChange={v => setActiveEntity({...activeEntity, qualifications: v})} isDark={isDarkMode} icon={<BookOpen size={16}/>} />
+                          <InputField label="LinkedIn URL" value={activeEntity.linkedin} onChange={(v: string) => setActiveEntity({...activeEntity, linkedin: v})} isDark={isDarkMode} icon={<Linkedin size={16}/>} />
+                          <InputField label="WhatsApp Contact" value={activeEntity.whatsapp} onChange={(v: string) => setActiveEntity({...activeEntity, whatsapp: v})} isDark={isDarkMode} icon={<MessageCircle size={16}/>} />
+                          <InputField label="Official Email" value={activeEntity.email} onChange={(v: string) => setActiveEntity({...activeEntity, email: v})} isDark={isDarkMode} icon={<Mail size={16}/>} />
+                          <InputField label="Qualifications" value={activeEntity.qualifications} onChange={(v: string) => setActiveEntity({...activeEntity, qualifications: v})} isDark={isDarkMode} icon={<BookOpen size={16}/>} />
                        </div>
                      )}
 
                      {activeTab === 'offices' && (
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 bg-slate-50/30 rounded-2xl">
-                          <InputField label="Phone" value={activeEntity.phone} onChange={v => setActiveEntity({...activeEntity, phone: v})} isDark={isDarkMode} icon={<Phone size={16}/>} />
-                          <InputField label="Email" value={activeEntity.email} onChange={v => setActiveEntity({...activeEntity, email: v})} isDark={isDarkMode} icon={<Mail size={16}/>} />
+                          <InputField label="Phone" value={activeEntity.phone} onChange={(v: string) => setActiveEntity({...activeEntity, phone: v})} isDark={isDarkMode} icon={<Phone size={16}/>} />
+                          <InputField label="Email" value={activeEntity.email} onChange={(v: string) => setActiveEntity({...activeEntity, email: v})} isDark={isDarkMode} icon={<Mail size={16}/>} />
                           <div className="col-span-2">
-                             <InputField label="Full Address" value={activeEntity.address} onChange={v => setActiveEntity({...activeEntity, address: v})} isDark={isDarkMode} />
+                             <InputField label="Full Address" value={activeEntity.address} onChange={(v: string) => setActiveEntity({...activeEntity, address: v})} isDark={isDarkMode} />
                           </div>
-                          <InputField label="Latitude" value={activeEntity.coordinates.lat.toString()} onChange={v => setActiveEntity({...activeEntity, coordinates: {...activeEntity.coordinates, lat: parseFloat(v) || 0}})} isDark={isDarkMode} />
-                          <InputField label="Longitude" value={activeEntity.coordinates.lng.toString()} onChange={v => setActiveEntity({...activeEntity, coordinates: {...activeEntity.coordinates, lng: parseFloat(v) || 0}})} isDark={isDarkMode} />
+                          <InputField label="Latitude" value={activeEntity.coordinates.lat.toString()} onChange={(v: string) => setActiveEntity({...activeEntity, coordinates: {...activeEntity.coordinates, lat: parseFloat(v) || 0}})} isDark={isDarkMode} />
+                          <InputField label="Longitude" value={activeEntity.coordinates.lng.toString()} onChange={(v: string) => setActiveEntity({...activeEntity, coordinates: {...activeEntity.coordinates, lng: parseFloat(v) || 0}})} isDark={isDarkMode} />
                        </div>
                      )}
 
@@ -365,7 +364,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      {['insights', 'casestudy'].includes(activeTab) && (
                        <RichContentEditor 
                           value={activeEntity.content || ''} 
-                          onChange={v => setActiveEntity({...activeEntity, content: v})} 
+                          onChange={(v: string) => setActiveEntity({...activeEntity, content: v})} 
                           isDark={isDarkMode} 
                        />
                      )}
@@ -468,7 +467,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                           {(activeTab === 'applications' ? filteredApplications : filteredInquiries).map(item => (
+                           {(activeTab === 'applications' ? filteredApplications : filteredInquiries).map((item) => (
                               <tr key={item.id} className={`hover:bg-slate-500/5 transition-colors group`}>
                                  <td className="px-8 py-6">
                                     {activeTab === 'applications' ? (
@@ -484,8 +483,8 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                                     )}
                                  </td>
                                  <td className="px-8 py-6">
-                                    <p className={`font-serif text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeTab === 'applications' ? (item as JobApplication).data.personal.name : item.name}</p>
-                                    <p className="text-xs text-slate-500 font-light">{activeTab === 'applications' ? (item as JobApplication).data.personal.email : item.email}</p>
+                                    <p className={`font-serif text-lg ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{activeTab === 'applications' ? (item as JobApplication).data.personal.name : (item as Inquiry).name}</p>
+                                    <p className="text-xs text-slate-500 font-light">{activeTab === 'applications' ? (item as JobApplication).data.personal.email : (item as Inquiry).email}</p>
                                  </td>
                                  <td className="px-8 py-6">
                                     {activeTab === 'applications' ? (
@@ -494,7 +493,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                                           <p className="text-xs text-slate-500">{new Date((item as JobApplication).submittedDate).toLocaleDateString()}</p>
                                        </div>
                                     ) : (
-                                       <span className="text-sm text-slate-400">{new Date(item.date).toLocaleDateString()}</span>
+                                       <span className="text-sm text-slate-400">{new Date((item as Inquiry).date).toLocaleDateString()}</span>
                                     )}
                                  </td>
                                  <td className="px-8 py-6">

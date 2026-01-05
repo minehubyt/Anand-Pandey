@@ -23,7 +23,11 @@ export const analyzeLegalQuery = async (query: string) => {
         }
       }
     });
-    return JSON.parse(response.text.trim());
+    
+    const text = response.text;
+    if (!text) return null;
+    
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("Error analyzing query:", error);
     return null;
@@ -54,7 +58,11 @@ export const parseResume = async (resumeText: string) => {
         }
       }
     });
-    return JSON.parse(response.text.trim());
+
+    const text = response.text;
+    if (!text) return null;
+
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("AI Resume Parsing failed:", error);
     return null;
