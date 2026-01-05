@@ -22,9 +22,8 @@ interface AdminPortalProps {
 
 type Tab = 'hero' | 'insights' | 'reports' | 'podcasts' | 'casestudy' | 'authors' | 'offices' | 'appointments' | 'rfp' | 'jobs' | 'applications';
 
-// --- UTILITY: Image Compression ---
-// Optimized for speed and Realtime Database limits.
-// Resizes to Max 800px and 0.5 quality to ensure payload is small and save is instant.
+// --- UTILITY: Robust Image Compression ---
+// Recursively compresses images to ensure they fit within Firestore's 1MB document limit.
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -34,31 +33,57 @@ const compressImage = (file: File): Promise<string> => {
       img.src = e.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
+        
+        // Initial strategy: 1000px at 0.7 quality
         let width = img.width;
         let height = img.height;
-        
-        // Resize logic: Max 800px (Optimized for speed)
-        const MAX_SIZE = 800;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        // Compress to JPEG at 0.5 quality (Fast upload, decent quality)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.5); 
-        resolve(dataUrl);
+        let MAX_SIZE = 1000;
+        let quality = 0.7;
+
+        const attemptCompression = () => {
+            let currW = width;
+            let currH = height;
+
+            if (currW > currH) {
+                if (currW > MAX_SIZE) {
+                    currH *= MAX_SIZE / currW;
+                    currW = MAX_SIZE;
+                }
+            } else {
+                if (currH > MAX_SIZE) {
+                    currW *= MAX_SIZE / currH;
+                    currH = MAX_SIZE;
+                }
+            }
+
+            canvas.width = currW;
+            canvas.height = currH;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, currW, currH);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            
+            // Check size: Base64 string length ~1.33 * bytes. 
+            // Target: < 900KB (~1,200,000 chars) to be safe for Firestore (1MB limit)
+            if (dataUrl.length > 1200000) {
+                // If too big, reduce quality or size and try again
+                if (quality > 0.5) {
+                    quality -= 0.2;
+                    attemptCompression();
+                } else if (MAX_SIZE > 600) {
+                    MAX_SIZE -= 200;
+                    // Reset dimensions to original to re-calculate aspect ratio correctly
+                    attemptCompression(); 
+                } else {
+                    // Last resort: aggressive compression
+                    resolve(canvas.toDataURL('image/jpeg', 0.3));
+                }
+            } else {
+                resolve(dataUrl);
+            }
+        };
+
+        attemptCompression();
       };
       img.onerror = (err) => reject(err);
     };
@@ -151,8 +176,9 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     // We do NOT await here to block the UI.
     const performBackgroundSave = async () => {
       try {
+        console.log(`Saving ${activeTab}...`);
         if (activeTab === 'hero') {
-          // Explicitly update local state instantly for Hero to avoid flicker
+          // Explicitly update local state instantly for Hero to avoid flicker in Admin View
           setHero(entityToSave as HeroContent);
           await contentService.saveHero(entityToSave);
         } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
@@ -164,11 +190,12 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
         } else if (activeTab === 'jobs') {
           await contentService.saveJob(entityToSave);
         }
+        console.log('Save successful');
       } catch (err: any) {
         console.error("Background Save Error:", err);
         let msg = "Sync Warning: Background save failed.";
         if (err.code === 'resource-exhausted') {
-           msg = "Data Limit: Image too large even after compression.";
+           msg = "Data Limit: Image too large. Please use a smaller image.";
         }
         alert(msg);
       }

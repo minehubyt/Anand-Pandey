@@ -109,7 +109,7 @@ const Hero: React.FC = () => {
       {/* Background Images Layer */}
       {slides.map((slide, idx) => (
         <div 
-          key={slide.id + '-bg-' + idx}
+          key={`${slide.id}-bg-${idx}-${slide.image?.substring(0, 20)}`} // Force re-render on image change
           className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
           <img
@@ -125,7 +125,7 @@ const Hero: React.FC = () => {
       <div className="relative z-10 max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 xl:px-32 w-full pt-20">
         <div className="max-w-4xl">
           {slides.map((slide, idx) => (
-            <div key={slide.id + '-content-' + idx} className={`${idx === currentIndex ? 'block' : 'hidden'}`}>
+            <div key={`${slide.id}-content-${idx}`} className={`${idx === currentIndex ? 'block' : 'hidden'}`}>
               
               <p className="text-[11px] font-bold tracking-[0.45em] uppercase text-white/60 mb-8 font-sans animate-reveal-up stagger-1">
                 {slide.category}

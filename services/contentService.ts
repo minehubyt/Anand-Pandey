@@ -62,7 +62,12 @@ export const contentService = {
   },
 
   saveHero: async (hero: Partial<HeroContent>) => {
-    await setDoc(doc(db, COLLECTIONS.HERO, 'main'), hero, { merge: true });
+    try {
+      await setDoc(doc(db, COLLECTIONS.HERO, 'main'), hero, { merge: true });
+    } catch (error) {
+      console.error("Firestore Hero Save Error:", error);
+      throw error; // Re-throw to be caught by UI
+    }
   },
 
   subscribeJobs: (callback: (jobs: Job[]) => void) => {
