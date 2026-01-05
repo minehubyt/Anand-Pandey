@@ -1,12 +1,11 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
-
-// Standard way to access env variables in a built Vite app on Vercel
-const apiKey = process.env.API_KEY || (import.meta as any).env?.VITE_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey });
 
 export const analyzeLegalQuery = async (query: string) => {
   try {
+    // Initialize GoogleGenAI directly with the pre-configured process.env.API_KEY
+    // The build process will replace 'process.env.API_KEY' with the actual string value
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Analyze this legal query and categorize it into a practice area and urgency level.
@@ -33,6 +32,8 @@ export const analyzeLegalQuery = async (query: string) => {
 
 export const parseResume = async (resumeText: string) => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Extract detailed personal and professional information from this resume text. 
