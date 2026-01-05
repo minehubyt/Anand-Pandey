@@ -47,42 +47,62 @@ const App: React.FC = () => {
     if (view.type === type && view.id === id) return;
     setIsTransitioning(true);
     
-    let newHash = id ? `${type}/${id}` : type;
-    if (type === 'insight' && id && title) {
-      newHash = `insight/${id}/${createSlug(title)}`;
-    }
+    // Construct Clean URL
+    let path = '/';
+    if (type === 'home') path = '/';
+    else if (type === 'insight' && title) path = `/insights/${createSlug(title)}`;
+    else if (type === 'insight' && id) path = `/insights/${id}`; // Fallback if no title
+    else if (type === 'page') path = `/page/${id}`;
+    else if (type === 'practice') path = `/practice/${id}`;
+    else if (type === 'rfp') path = '/rfp';
+    else if (type === 'booking') path = '/booking';
+    else if (type === 'careers') path = '/careers';
+    else if (type === 'thinking') path = '/thinking';
+    else if (type === 'login') path = '/login';
+    else if (type === 'dashboard') path = '/dashboard';
+    else if (type === 'jobs') path = '/careers/jobs';
+    else if (type === 'admin') path = '/portal/admin';
+    else if (id) path = `/${type}/${id}`;
+    else path = `/${type}`;
 
-    window.location.hash = newHash;
+    window.history.pushState({ type, id }, '', path);
+
     setTimeout(() => {
-      setView({ type, id });
+      // Use slug as ID if title is present to allow lookup by slug in components
+      setView({ type, id: (type === 'insight' && title) ? createSlug(title) : id });
       window.scrollTo({ top: 0, behavior: 'instant' });
-      setTimeout(() => setIsTransitioning(false), 50);
-    }, 400);
+      setTimeout(() => setIsTransitioning(false), 100);
+    }, 600);
   };
 
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      
-      if (!hash || hash === 'home') setView({ type: 'home' });
-      else if (hash.startsWith('insight/')) {
-        const parts = hash.split('/');
-        setView({ type: 'insight', id: parts[1] });
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const parts = path.split('/').filter(Boolean);
+      const root = parts[0];
+      const sub = parts[1];
+
+      // Map Paths to Views
+      if (!root) setView({ type: 'home' });
+      else if (root === 'insights' && sub) setView({ type: 'insight', id: sub });
+      else if (root === 'page' && sub) setView({ type: 'page', id: sub });
+      else if (root === 'practice' && sub) setView({ type: 'practice', id: sub });
+      else if (root === 'rfp') setView({ type: 'rfp' });
+      else if (root === 'booking') setView({ type: 'booking' });
+      else if (root === 'thinking') setView({ type: 'thinking' });
+      else if (root === 'careers') {
+         if (sub === 'jobs') setView({ type: 'jobs' });
+         else setView({ type: 'careers' });
       }
-      else if (hash.startsWith('page/')) setView({ type: 'page', id: hash.split('/')[1] });
-      else if (hash.startsWith('practice/')) setView({ type: 'practice', id: hash.split('/')[1] });
-      else if (hash === 'thinking') setView({ type: 'thinking' });
-      else if (hash === 'careers') setView({ type: 'careers' });
-      else if (hash === 'jobs') setView({ type: 'jobs' });
-      else if (hash === 'dashboard') setView({ type: 'dashboard' });
-      else if (hash === 'rfp') setView({ type: 'rfp' });
-      else if (hash === 'login') setView({ type: 'login' });
-      else if (hash === 'admin') setView({ type: 'admin' });
-      else if (hash === 'booking') setView({ type: 'booking' });
+      else if (root === 'login') setView({ type: 'login' });
+      else if (root === 'dashboard') setView({ type: 'dashboard' });
+      else if (root === 'portal' && sub === 'admin') setView({ type: 'admin' });
+      else setView({ type: 'home' }); // Default fallback
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    handleHashChange();
+    window.addEventListener('popstate', handlePopState);
+    handlePopState(); // Handle initial load
+    
     contentService.seedData();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -110,7 +130,7 @@ const App: React.FC = () => {
     });
 
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handlePopState);
       unsubscribe();
     };
   }, [pendingJobApplication]);
@@ -160,6 +180,7 @@ const App: React.FC = () => {
       case 'insight': return <InsightDetail id={view.id} onBack={() => navigateTo('thinking')} />;
       case 'thinking': return <OurThinkingPage onBack={() => navigateTo('home')} onInsightClick={(id, title) => navigateTo('insight', id, title)} />;
       case 'practice': return <PracticeAreaPage id={view.id || ''} onBack={() => navigateTo('home')} onNavigate={navigateTo} />;
+      case 'rfp': return <RFPPage onBack={() => navigateTo('home')} />;
       default:
         return (
           <>
@@ -174,7 +195,7 @@ const App: React.FC = () => {
     }
   };
 
-  const showGlobalFooter = !['admin', 'login', 'thinking', 'careers', 'jobs', 'dashboard', 'booking'].includes(view.type);
+  const showGlobalFooter = !['admin', 'login', 'thinking', 'careers', 'jobs', 'dashboard', 'booking', 'rfp'].includes(view.type);
 
   return (
     <div className="min-h-screen bg-white">
@@ -191,7 +212,14 @@ const App: React.FC = () => {
         />
       )}
 
-      <main key={view.type + (view.id || '')} className={`${isTransitioning ? 'opacity-0' : 'opacity-100'} transition-all duration-700`}>
+      <main 
+        key={view.type + (view.id || '')} 
+        className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${
+          isTransitioning 
+            ? 'opacity-0 translate-y-4 blur-sm scale-[0.98]' 
+            : 'opacity-100 translate-y-0 blur-0 scale-100'
+        }`}
+      >
         {renderContent()}
       </main>
       

@@ -4,12 +4,12 @@ import React from 'react';
 interface MegaMenuProps {
   activeMenu: string | null;
   onClose: () => void;
-  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers', id?: string) => void;
+  onNavigate: (type: 'home' | 'insight' | 'page' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking', id?: string) => void;
 }
 
 const MENU_DATA: Record<string, {
-  sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers'; id: string; href?: string }[] }[];
-  featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers'; id: string };
+  sections: { title: string; links: { name: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string; href?: string }[] }[];
+  featured?: { title: string; desc: string; image: string; type: 'insight' | 'page' | 'anchor' | 'rfp' | 'thinking' | 'practice' | 'careers' | 'booking'; id: string };
 }> = {
   'Who we Are': {
     sections: [
@@ -148,7 +148,8 @@ const MENU_DATA: Record<string, {
         links: [
           { name: 'Submit RFP', type: 'rfp', id: 'submit-rfp' },
           { name: 'General Inquiries', type: 'page', id: 'contact' },
-          { name: 'Book an Appointment', type: 'practice', id: 'appointments', href: '#appointments' },
+          // Fixed: Changed type to 'booking' and removed href to prevent Home scroll
+          { name: 'Book an Appointment', type: 'booking', id: 'booking-page' },
         ]
       },
       {
@@ -191,10 +192,11 @@ const MegaMenu: React.FC<MegaMenuProps> = ({ activeMenu, onClose, onNavigate }) 
                   <li key={lIdx}>
                     <button 
                       onClick={() => {
-                        if (link.type === 'practice' && link.href?.startsWith('#')) {
+                        // Only scroll home if it's explicitly an anchor link on home
+                        if (link.href?.startsWith('#') && link.type !== 'booking') {
                           onNavigate('home');
                           setTimeout(() => {
-                             const el = document.getElementById(link.id);
+                             const el = document.getElementById(link.href!.substring(1));
                              el?.scrollIntoView({ behavior: 'smooth' });
                           }, 100);
                         } else {

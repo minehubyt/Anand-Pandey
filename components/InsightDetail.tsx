@@ -14,12 +14,17 @@ const InsightDetail: React.FC<InsightDetailProps> = ({ id, onBack }) => {
   const [author, setAuthor] = useState<Author | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to match slugs if ID is actually a slug from the URL
+  const createSlug = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
   useEffect(() => {
     if (!id) return;
     
     setLoading(true);
     const unsub = contentService.subscribeInsights((allInsights) => {
-      const found = allInsights.find(i => i.id === id);
+      // Find by ID OR by Title Slug (for clean URLs)
+      const found = allInsights.find(i => i.id === id || createSlug(i.title) === id);
+      
       if (found) {
         setInsight(found);
         document.title = `${found.title} | AK Pandey & Associates`;
@@ -45,15 +50,15 @@ const InsightDetail: React.FC<InsightDetailProps> = ({ id, onBack }) => {
   );
 
   if (!insight) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center pt-32">
       <h2 className="text-4xl font-serif text-slate-900 mb-6">Mandate Not Found</h2>
-      <p className="text-slate-500 mb-12">The deep-link provided does not match our current database records.</p>
+      <p className="text-slate-500 mb-12">The dossier you are looking for does not match our current database records.</p>
       <button onClick={onBack} className="px-10 py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest">RETURN TO THINKING</button>
     </div>
   );
 
   return (
-    <div className="pt-24 pb-32 animate-page-fade">
+    <div className="pt-40 pb-32 animate-page-fade">
       <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 xl:px-32">
         
         {/* Breadcrumb / Back Link */}
