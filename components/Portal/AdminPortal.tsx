@@ -79,10 +79,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
   const handleNew = () => {
     const templates: Record<Tab, any> = {
       hero: { ...hero },
-      insights: { type: 'insights', title: '', category: 'LEGAL UPDATE', desc: '', content: '', image: '', bannerImage: '' },
-      reports: { type: 'reports', title: '', category: 'ANNUAL REPORT', desc: '', pdfUrl: '', image: '', bannerImage: '' },
-      podcasts: { type: 'podcasts', title: '', category: 'LEGAL PODCAST', desc: '', audioUrl: '', season: '1', episode: '1', image: '', bannerImage: '' },
-      casestudy: { type: 'casestudy', title: '', category: 'MANDATE OUTCOME', desc: '', content: '', image: '', bannerImage: '' },
+      insights: { type: 'insights', title: '', category: 'LEGAL UPDATE', desc: '', content: '', image: '', bannerImage: '', isFeatured: false, showInHero: false },
+      reports: { type: 'reports', title: '', category: 'ANNUAL REPORT', desc: '', pdfUrl: '', image: '', bannerImage: '', isFeatured: false, showInHero: false },
+      podcasts: { type: 'podcasts', title: '', category: 'LEGAL PODCAST', desc: '', audioUrl: '', season: '1', episode: '1', image: '', bannerImage: '', isFeatured: false, showInHero: false },
+      casestudy: { type: 'casestudy', title: '', category: 'MANDATE OUTCOME', desc: '', content: '', image: '', bannerImage: '', isFeatured: false, showInHero: false },
       authors: { name: '', title: 'Counsel', bio: '', linkedin: '', whatsapp: '', email: '', qualifications: '', image: '' },
       offices: { city: '', address: '', phone: '', email: '', coordinates: { lat: 28.61, lng: 77.20 }, image: '' },
       jobs: { title: '', department: 'Litigation', location: 'New Delhi', description: '', status: 'active' },
@@ -98,7 +98,7 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
     try {
       setLoading(true);
       if (activeTab === 'hero') {
-        // Save hero logic via service
+        await contentService.saveHero(activeEntity);
       } else if (['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab)) {
         await contentService.saveInsight(activeEntity);
       } else if (activeTab === 'authors') {
@@ -235,10 +235,11 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
            
            {['hero', 'insights', 'reports', 'podcasts', 'casestudy', 'authors', 'offices', 'jobs'].includes(activeTab) && !isEditing && (
              <button 
-              onClick={handleNew}
+              onClick={activeTab === 'hero' ? () => handleEdit(hero) : handleNew}
               className="px-10 py-5 bg-[#CC1414] text-white text-[11px] font-bold tracking-[0.3em] uppercase rounded-full hover:scale-105 transition-all shadow-xl shadow-red-500/20 flex items-center gap-3"
              >
-               <Plus size={18}/> Add New Entity
+               {activeTab === 'hero' ? <Edit2 size={18}/> : <Plus size={18}/>}
+               {activeTab === 'hero' ? 'Update Main Banner' : 'Add New Entity'}
              </button>
            )}
 
@@ -269,16 +270,20 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                   <div className="lg:col-span-4 space-y-10">
                      {activeTab !== 'jobs' && (
                        <ImagePicker 
-                          label="Thumbnail / Portrait" 
-                          value={activeEntity.image} 
-                          onChange={(v: string) => setActiveEntity({...activeEntity, image: v})} 
+                          label={activeTab === 'hero' ? "Banner Backdrop" : "Thumbnail / Portrait"} 
+                          value={activeEntity.image || activeEntity.backgroundImage} 
+                          onChange={(v: string) => {
+                             if (activeTab === 'hero') setActiveEntity({...activeEntity, backgroundImage: v});
+                             else setActiveEntity({...activeEntity, image: v});
+                          }} 
                           isDark={isDarkMode} 
+                          wide={activeTab === 'hero'}
                        />
                      )}
                      
                      {activeEntity.bannerImage !== undefined && (
                         <ImagePicker 
-                          label="Banner / Hero Backdrop" 
+                          label="Detailed Banner (Optional)" 
                           value={activeEntity.bannerImage} 
                           onChange={(v: string) => setActiveEntity({...activeEntity, bannerImage: v})} 
                           isDark={isDarkMode} 
@@ -293,14 +298,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                              <ToggleButton 
                               active={activeEntity.isFeatured} 
                               onClick={() => setActiveEntity({...activeEntity, isFeatured: !activeEntity.isFeatured})} 
-                              label="Feature on Home" 
+                              label="Feature on Home Page" 
                              />
                            )}
                            {activeEntity.showInHero !== undefined && (
                              <ToggleButton 
                               active={activeEntity.showInHero} 
                               onClick={() => setActiveEntity({...activeEntity, showInHero: !activeEntity.showInHero})} 
-                              label="Show in Main Hero" 
+                              label="Include in Hero Slideshow" 
                              />
                            )}
                            {activeTab === 'jobs' && (
@@ -317,7 +322,16 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                   {/* Right Column: Content Matrix */}
                   <div className="lg:col-span-8 space-y-8">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <InputField label="Primary Title" value={activeEntity.title || activeEntity.name} onChange={(v: string) => setActiveEntity({...activeEntity, [activeEntity.name !== undefined ? 'name' : 'title']: v})} isDark={isDarkMode} />
+                        <InputField 
+                          label={activeTab === 'hero' ? "Banner Headline" : "Primary Title"} 
+                          value={activeEntity.headline || activeEntity.title || activeEntity.name || ''} 
+                          onChange={(v: string) => {
+                             if (activeTab === 'hero') setActiveEntity({...activeEntity, headline: v});
+                             else if (activeEntity.name !== undefined) setActiveEntity({...activeEntity, name: v});
+                             else setActiveEntity({...activeEntity, title: v});
+                          }} 
+                          isDark={isDarkMode} 
+                        />
                         
                         {activeTab === 'jobs' ? (
                            <div className="space-y-4">
@@ -333,8 +347,10 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                                  <option>Internship</option>
                               </select>
                            </div>
+                        ) : activeTab === 'hero' ? (
+                            <InputField label="CTA Button Text" value={activeEntity.ctaText} onChange={(v: string) => setActiveEntity({...activeEntity, ctaText: v})} isDark={isDarkMode} />
                         ) : (
-                           <InputField label="Category / Role" value={activeEntity.category || activeEntity.title} onChange={(v: string) => setActiveEntity({...activeEntity, [activeEntity.category !== undefined ? 'category' : 'title']: v})} isDark={isDarkMode} />
+                           <InputField label="Category / Specialized Role" value={activeEntity.category} onChange={(v: string) => setActiveEntity({...activeEntity, category: v})} isDark={isDarkMode} />
                         )}
                      </div>
 
@@ -382,8 +398,14 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
                      <div className="space-y-4">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Brief Narration / Summary</label>
                         <textarea 
-                          value={activeEntity.desc || activeEntity.bio || activeEntity.description} 
-                          onChange={e => setActiveEntity({...activeEntity, [activeEntity.bio !== undefined ? 'bio' : activeEntity.description !== undefined ? 'description' : 'desc']: e.target.value})}
+                          value={activeEntity.subtext || activeEntity.desc || activeEntity.bio || activeEntity.description || ''} 
+                          onChange={e => {
+                              const v = e.target.value;
+                              if (activeTab === 'hero') setActiveEntity({...activeEntity, subtext: v});
+                              else if (activeEntity.bio !== undefined) setActiveEntity({...activeEntity, bio: v});
+                              else if (activeEntity.description !== undefined) setActiveEntity({...activeEntity, description: v});
+                              else setActiveEntity({...activeEntity, desc: v});
+                          }}
                           className={`w-full p-6 border rounded-2xl min-h-[120px] focus:outline-none focus:ring-1 focus:ring-[#CC1414] font-light ${isDarkMode ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200'}`}
                           placeholder="Summary for cards and snippets..."
                         />
@@ -408,6 +430,20 @@ const AdminPortal: React.FC<AdminPortalProps> = ({ onLogout }) => {
             </div>
           ) : (
             <div className="space-y-8">
+               {/* List display for hero settings */}
+               {activeTab === 'hero' && hero && (
+                   <div className="max-w-4xl">
+                        <div className={`p-10 rounded-3xl border ${isDarkMode ? 'bg-[#111216] border-white/5' : 'bg-white border-slate-100'}`}>
+                            <div className="aspect-video rounded-2xl overflow-hidden mb-8 shadow-inner bg-slate-900">
+                                <img src={hero.backgroundImage} className="w-full h-full object-cover opacity-60" />
+                            </div>
+                            <h3 className="text-3xl font-serif mb-4">{hero.headline}</h3>
+                            <p className="text-slate-500 font-light leading-relaxed mb-8">{hero.subtext}</p>
+                            <button onClick={() => handleEdit(hero)} className="px-8 py-3 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl">Edit Protocol Banner</button>
+                        </div>
+                   </div>
+               )}
+
                {/* Entity Lists */}
                {['insights', 'reports', 'podcasts', 'casestudy'].includes(activeTab) && (
                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -671,7 +707,7 @@ const InputField = ({ label, value, onChange, isDark, icon, type = "text" }: any
     </label>
     <input 
       type={type}
-      value={value}
+      value={value || ''}
       onChange={e => onChange(e.target.value)}
       className={`w-full p-4 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#CC1414] font-light ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
     />

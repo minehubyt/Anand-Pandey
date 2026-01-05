@@ -11,7 +11,7 @@ import { Insight } from '../types';
 
 interface OurThinkingPageProps {
   onBack: () => void;
-  onInsightClick: (id: string, title: string) => void;
+  onInsightClick: (item: Insight) => void;
 }
 
 const OurThinkingPage: React.FC<OurThinkingPageProps> = ({ onBack, onInsightClick }) => {
@@ -88,7 +88,7 @@ const OurThinkingPage: React.FC<OurThinkingPageProps> = ({ onBack, onInsightClic
         <div className="max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 xl:px-32">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {filtered.map((item, idx) => (
-              <div key={item.id} className="group cursor-pointer flex flex-col" onClick={() => onInsightClick(item.id, item.title)}>
+              <div key={item.id} className="group cursor-pointer flex flex-col" onClick={() => onInsightClick(item)}>
                 <div className="aspect-[16/9] overflow-hidden bg-slate-200 mb-6 relative">
                   <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2s]" alt={item.title} />
                   {item.type === 'podcasts' && <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full text-white"><Mic size={16}/></div>}

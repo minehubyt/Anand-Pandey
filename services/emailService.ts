@@ -175,7 +175,7 @@ export const emailService = {
    * IMPLEMENTS "FAIL-OPEN" LOGIC: If the API fails (404 on local, 400 on free tier),
    * it returns TRUE to ensure the UI Demo Experience is not interrupted.
    */
-  send: async (to: string, subject: string, body: string) => {
+  send: async (to: string, subject: string, body: string, replyTo?: string) => {
     // 1. Immediate simulation for obvious local environments to save network calls
     const isLocal = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1';
@@ -199,7 +199,8 @@ export const emailService = {
         body: JSON.stringify({
           to,
           subject,
-          html: body // Body is now a full HTML string
+          html: body, // Body is now a full HTML string
+          replyTo // Pass optional replyTo
         })
       });
 
@@ -276,11 +277,12 @@ export const emailService = {
       html
     );
 
-    // 2. Send to Admin (Simplified)
+    // 2. Send to Admin (Modified subject line to be less spammy)
     await emailService.send(
       ADMIN_EMAIL,
-      `URGENT: New Appointment - ${uniqueId}`,
-      `<p>New appointment request from <strong>${name}</strong>.</p><p>Date: ${formattedDate}</p>`
+      `New Appointment Request: ${uniqueId}`, 
+      `<p>New appointment request from <strong>${name}</strong>.</p><p>Date: ${formattedDate}</p>`,
+      email // Reply-to client
     );
   },
 
@@ -340,8 +342,9 @@ export const emailService = {
     // 2. Send to Admin
     await emailService.send(
       ADMIN_EMAIL,
-      `NEW RFP: ${organization}`,
-      `RFP Category: ${category}<br>Contact: ${fullName} (${email})<br>Summary: ${summary}`
+      `New RFP: ${organization}`,
+      `RFP Category: ${category}<br>Contact: ${fullName} (${email})<br>Summary: ${summary}`,
+      email // Reply-to client
     );
   },
 
@@ -382,8 +385,9 @@ export const emailService = {
     // 2. Send to Admin
     await emailService.send(
       ADMIN_EMAIL,
-      `NEW APPLICATION: ${jobTitle}`,
-      `Applicant: ${name}<br>Email: ${email}<br><br><strong>Education:</strong> ${formData?.education}<br><strong>Experience:</strong> ${formData?.experience}`
+      `New Application: ${jobTitle}`,
+      `Applicant: ${name}<br>Email: ${email}<br><br><strong>Education:</strong> ${formData?.education}<br><strong>Experience:</strong> ${formData?.experience}`,
+      email // Reply-to applicant
     );
   },
 

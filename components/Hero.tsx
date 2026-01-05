@@ -5,37 +5,76 @@ import { contentService } from '../services/contentService';
 import { Insight, HeroContent } from '../types';
 
 const Hero: React.FC = () => {
-  const [slides, setSlides] = useState<any[]>([]);
+  // Initial state has default data to ensure banner appears immediately
+  const [slides, setSlides] = useState<any[]>([
+    {
+      id: 'main-hero',
+      title: "Strategic Legal Counsel for a Complex World",
+      desc: "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
+      image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
+      category: 'STRATEGIC BRIEFING',
+      ctaText: "DISCUSS MANDATE"
+    }
+  ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Combine base hero document with insights tagged for hero
+    // We maintain local variables to merge streams from hero config and insights
+    // We initialize with default values to prevent any flash of empty content
+    let heroContent: any = {
+      headline: "Strategic Legal Counsel for a Complex World",
+      subtext: "Providing precise legal strategy and uncompromising advocacy for global enterprises and individuals.",
+      backgroundImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
+      ctaText: "DISCUSS MANDATE"
+    };
+    let insightSlides: any[] = [];
+
+    const updateSlides = () => {
+      const mainSlide = {
+        id: 'main-hero',
+        title: heroContent.headline || heroContent.title || "Strategic Legal Counsel",
+        desc: heroContent.subtext || heroContent.desc || "Precise strategy for complex mandates.",
+        image: heroContent.backgroundImage || heroContent.image || "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=2400",
+        category: 'STRATEGIC BRIEFING',
+        ctaText: heroContent.ctaText || 'VIEW NOW'
+      };
+      
+      const additionalSlides = insightSlides.map(item => ({
+        id: item.id,
+        title: item.title,
+        desc: item.desc,
+        image: item.bannerImage || item.image,
+        category: item.category || 'INSIGHT',
+        ctaText: 'VIEW NOW'
+      }));
+
+      // Always ensure at least one slide exists
+      setSlides([mainSlide, ...additionalSlides]);
+    };
+
     const unsubHero = contentService.subscribeHero((mainHero) => {
-      const unsubInsights = contentService.subscribeHeroInsights((heroInsights) => {
-        const combinedSlides = [
-          {
-            id: 'main-hero',
-            title: mainHero.headline,
-            desc: mainHero.subtext,
-            image: mainHero.backgroundImage,
-            category: 'STRATEGIC BRIEFING',
-            ctaText: mainHero.ctaText || 'VIEW NOW'
-          },
-          ...heroInsights.map(item => ({
-            id: item.id,
-            title: item.title,
-            desc: item.desc,
-            image: item.bannerImage || item.image,
-            category: item.category || 'INSIGHT',
-            ctaText: 'VIEW NOW'
-          }))
-        ];
-        setSlides(combinedSlides);
-      });
-      return () => unsubHero();
+      if (mainHero) {
+        heroContent = { ...heroContent, ...mainHero };
+        updateSlides();
+      }
     });
+
+    const unsubInsights = contentService.subscribeHeroInsights((heroInsights) => {
+      if (heroInsights) {
+        insightSlides = heroInsights;
+        updateSlides();
+      }
+    });
+
+    // Initial update to ensure default content is rendered if subscriptions are slow
+    updateSlides();
+
+    return () => {
+      unsubHero();
+      unsubInsights();
+    };
   }, []);
 
   const nextSlide = useCallback(() => {
@@ -54,6 +93,7 @@ const Hero: React.FC = () => {
 
   useEffect(() => {
     if (slides.length > 1) {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
       autoPlayRef.current = setInterval(nextSlide, 8000);
     }
     return () => {
@@ -69,7 +109,7 @@ const Hero: React.FC = () => {
       {/* Background Images Layer */}
       {slides.map((slide, idx) => (
         <div 
-          key={slide.id + '-bg'}
+          key={slide.id + '-bg-' + idx}
           className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
           <img
@@ -85,7 +125,7 @@ const Hero: React.FC = () => {
       <div className="relative z-10 max-w-[1600px] mx-auto px-6 md:px-12 lg:px-20 xl:px-32 w-full pt-20">
         <div className="max-w-4xl">
           {slides.map((slide, idx) => (
-            <div key={slide.id + '-content'} className={`${idx === currentIndex ? 'block' : 'hidden'}`}>
+            <div key={slide.id + '-content-' + idx} className={`${idx === currentIndex ? 'block' : 'hidden'}`}>
               
               <p className="text-[11px] font-bold tracking-[0.45em] uppercase text-white/60 mb-8 font-sans animate-reveal-up stagger-1">
                 {slide.category}

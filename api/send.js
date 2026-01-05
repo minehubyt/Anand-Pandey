@@ -26,15 +26,31 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { to, subject, html } = req.body;
+    const { to, subject, html, replyTo } = req.body;
     
+    // DELIVERABILITY OPTIMIZATION:
+    // Generate a plain text version from the HTML. 
+    // Sending both (Multipart) significantly reduces spam scores.
+    const textVersion = html.replace(/<[^>]*>?/gm, '');
+
     // Attempt to send email
-    // Sender updated to the verified domain
     const { data, error } = await resend.emails.send({
       from: 'AK Pandey & Associates <noreply@thetaxjournal.in>',
       to: to,
+      reply_to: replyTo || 'admin@anandpandey.in', // Essential for reputation
       subject: subject,
       html: html,
+      text: textVersion, // fallback for spam filters
+      headers: {
+        'X-Entity-Ref-ID': 'AKP-MANDATE-MATRIX',
+        'X-Auto-Response-Suppress': 'OOF, DR, RN, NRN, AutoReply'
+      },
+      tags: [
+        {
+          name: 'category',
+          value: 'legal_transactional',
+        },
+      ],
     });
 
     if (error) {

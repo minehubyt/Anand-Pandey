@@ -44,22 +44,14 @@ export const PRACTICE_AREAS: PracticeArea[] = [
 
 export const OFFICES: OfficeLocation[] = [
   {
-    // Fix: Added unique 'id' property to satisfy OfficeLocation interface
-    id: 'delhi',
-    city: 'New Delhi',
-    address: 'High Court Chambers, Shanti Path, New Delhi, 110001',
-    phone: '+91 11 2345 6789',
-    email: 'delhi.office@akpandey.com',
-    coordinates: { lat: 28.6139, lng: 77.2090 }
-  },
-  {
-    // Fix: Added unique 'id' property to satisfy OfficeLocation interface
-    id: 'lucknow',
-    city: 'Lucknow',
-    address: 'Civil Lines, Hazratganj, Lucknow, 226001',
-    phone: '+91 522 987 6543',
-    email: 'lucknow.office@akpandey.com',
-    coordinates: { lat: 26.8467, lng: 80.9462 }
+    id: 'ranchi',
+    city: 'Ranchi',
+    address: '2nd Floor, Tara Kunj Complex, Khelgoan Chowk, Ranchi, Jharkhand - 835217',
+    phone: '+91 91101 5484',
+    email: 'ranchi@anandpandey.in',
+    coordinates: { lat: 23.3750, lng: 85.3550 },
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1200',
+    locationUrl: 'https://www.google.com/maps/search/?api=1&query=Tara+Kunj+Complex+Khelgoan+Chowk+Ranchi'
   }
 ];
 

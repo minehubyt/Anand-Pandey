@@ -61,6 +61,10 @@ export const contentService = {
     });
   },
 
+  saveHero: async (hero: Partial<HeroContent>) => {
+    await setDoc(doc(db, COLLECTIONS.HERO, 'main'), hero, { merge: true });
+  },
+
   subscribeJobs: (callback: (jobs: Job[]) => void) => {
     const q = query(collection(db, COLLECTIONS.JOBS), where('status', '==', 'active'));
     return onSnapshot(q, (snapshot) => {
@@ -108,12 +112,20 @@ export const contentService = {
   
   subscribeHeroInsights: (callback: (insights: Insight[]) => void) => {
     const q = query(collection(db, COLLECTIONS.INSIGHTS), where('showInHero', '==', true));
-    return onSnapshot(q, (snapshot) => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight))));
+    return onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
+      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(data);
+    });
   },
   
   subscribeFeaturedInsights: (callback: (insights: Insight[]) => void) => {
     const q = query(collection(db, COLLECTIONS.INSIGHTS), where('isFeatured', '==', true));
-    return onSnapshot(q, (snapshot) => callback(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight))));
+    return onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Insight));
+      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(data);
+    });
   },
   
   saveInsight: async (insight: Insight) => {

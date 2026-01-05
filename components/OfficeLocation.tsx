@@ -1,19 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { MapPin, Phone, Mail, RefreshCw } from 'lucide-react';
-import { contentService } from '../services/contentService';
+import { OFFICES } from '../constants';
 import { OfficeLocation as OfficeType } from '../types';
 
 const OfficeLocation: React.FC = () => {
-  const [offices, setOffices] = useState<OfficeType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [offices, setOffices] = useState<OfficeType[]>(OFFICES);
+  const [loading, setLoading] = useState(false);
 
+  // We primarily use the static constants for office locations now for reliability, 
+  // but keeping the structure if dynamic loading is needed in future.
   useEffect(() => {
-    const unsub = contentService.subscribeOffices((data) => {
-      setOffices(data);
-      setLoading(false);
-    });
-    return () => unsub();
+     setOffices(OFFICES);
+     setLoading(false);
   }, []);
 
   return (
@@ -29,7 +28,7 @@ const OfficeLocation: React.FC = () => {
         {loading ? (
           <div className="flex justify-center py-20"><RefreshCw className="w-8 h-8 animate-spin text-slate-200" /></div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-24">
+          <div className="flex flex-col gap-12">
             {offices.map((office) => (
               <div key={office.id} className="bg-white p-10 md:p-16 shadow-sm border border-slate-100 flex flex-col md:flex-row gap-12 hover:shadow-2xl transition-all duration-700 transform hover:-translate-y-2 group">
                 <div className="flex-1">
@@ -50,13 +49,20 @@ const OfficeLocation: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <button className="mt-12 text-[11px] font-bold tracking-[0.3em] uppercase text-slate-900 border-b-2 border-slate-100 hover:border-[#CC1414] transition-all pb-2 inline-block">
-                    VIEW ON MAP &rarr;
-                  </button>
+                  {office.locationUrl && (
+                    <a 
+                      href={office.locationUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-12 text-[11px] font-bold tracking-[0.3em] uppercase text-slate-900 border-b-2 border-slate-100 hover:border-[#CC1414] transition-all pb-2 inline-block cursor-pointer"
+                    >
+                      VIEW ON MAP &rarr;
+                    </a>
+                  )}
                 </div>
-                <div className="md:w-5/12 aspect-square md:aspect-auto h-64 md:h-auto bg-slate-100 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-[2s]">
+                <div className="md:w-6/12 aspect-[16/9] md:aspect-auto h-64 md:h-auto bg-slate-100 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all duration-[2s]">
                   <img 
-                     src={office.image || `https://picsum.photos/seed/${office.city}/600/600`} 
+                     src={office.image || `https://picsum.photos/seed/${office.city}/1600/900`} 
                      alt={`${office.city} architecture`}
                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[3s]"
                   />

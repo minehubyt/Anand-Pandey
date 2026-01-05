@@ -23,7 +23,7 @@ import ApplicantDashboard from './components/ApplicantPortal/Dashboard';
 import GeneralUserDashboard from './components/Portal/GeneralUserDashboard';
 import AdminLogin from './components/Portal/AdminLogin';
 import AdminPortal from './components/Portal/AdminPortal';
-import DisclaimerModal from './components/DisclaimerModal'; // Imported DisclaimerModal
+import DisclaimerModal from './components/DisclaimerModal';
 import { contentService } from './services/contentService';
 import { Job, UserProfile } from './types';
 
@@ -36,34 +36,33 @@ const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [applyingFor, setApplyingFor] = useState<Job | null>(null);
-  const [showDisclaimer, setShowDisclaimer] = useState(false); // State for disclaimer visibility
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   
   const [pendingJobApplication, setPendingJobApplication] = useState<Job | null>(null);
   
   const viewRef = useRef(view);
   useEffect(() => { viewRef.current = view; }, [view]);
 
-  // Robust slug generation
   const createSlug = (text: string) => {
     if (!text) return '';
     return text
       .toString()
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, '-')     // Replace spaces with -
-      .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-      .replace(/\-\-+/g, '-');  // Replace multiple - with single -
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-');
   };
 
-  const navigateTo = (type: ViewType, id?: string, title?: string) => {
+  const navigateTo = (type: ViewType, id?: string, title?: string, subType?: string) => {
     if (view.type === type && view.id === id) return;
     setIsTransitioning(true);
     
-    // Construct Clean URL
     let path = '/';
     if (type === 'home') path = '/';
+    else if (type === 'insight' && title && subType) path = `/${subType}/${createSlug(title)}`;
     else if (type === 'insight' && title) path = `/insights/${createSlug(title)}`;
-    else if (type === 'insight' && id) path = `/insights/${id}`; // Fallback if no title
+    else if (type === 'insight' && id) path = `/insights/${id}`;
     else if (type === 'page') path = `/page/${id}`;
     else if (type === 'practice') path = `/practice/${id}`;
     else if (type === 'rfp') path = '/rfp';
@@ -79,18 +78,15 @@ const App: React.FC = () => {
 
     window.history.pushState({ type, id }, '', path);
 
+    // Reduced timeout from 600ms to 250ms for snappier response
     setTimeout(() => {
-      // Prioritize using the specific ID if available for robust internal navigation
-      // Fallback to slug/id logic only if ID is missing (unlikely in internal nav)
       setView({ type, id: id });
-      
       window.scrollTo({ top: 0, behavior: 'instant' });
-      setTimeout(() => setIsTransitioning(false), 100);
-    }, 600);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 250);
   };
 
   useEffect(() => {
-    // Disclaimer Check Logic
     const hasSeenDisclaimer = sessionStorage.getItem('hasAcknowledgedDisclaimer');
     if (!hasSeenDisclaimer) {
       setShowDisclaimer(true);
@@ -102,9 +98,11 @@ const App: React.FC = () => {
       const root = parts[0];
       const sub = parts[1];
 
-      // Map Paths to Views
+      // Deep link routing logic for various content types
+      const contentTypes = ['insights', 'reports', 'podcasts', 'articles', 'events', 'casestudy'];
+
       if (!root) setView({ type: 'home' });
-      else if (root === 'insights' && sub) setView({ type: 'insight', id: sub });
+      else if (contentTypes.includes(root) && sub) setView({ type: 'insight', id: sub });
       else if (root === 'page' && sub) setView({ type: 'page', id: sub });
       else if (root === 'practice' && sub) setView({ type: 'practice', id: sub });
       else if (root === 'rfp') setView({ type: 'rfp' });
@@ -117,11 +115,11 @@ const App: React.FC = () => {
       else if (root === 'login') setView({ type: 'login' });
       else if (root === 'dashboard') setView({ type: 'dashboard' });
       else if (root === 'portal' && sub === 'admin') setView({ type: 'admin' });
-      else setView({ type: 'home' }); // Default fallback
+      else setView({ type: 'home' });
     };
 
     window.addEventListener('popstate', handlePopState);
-    handlePopState(); // Handle initial load
+    handlePopState();
     
     contentService.seedData();
 
@@ -203,7 +201,7 @@ const App: React.FC = () => {
       case 'jobs': return <JobListingPage onBack={() => navigateTo('careers')} onApply={handleApplyClick} />;
       case 'careers': return <CareersPage onBack={() => navigateTo('home')} onNavigate={navigateTo} />;
       case 'insight': return <InsightDetail id={view.id} onBack={() => navigateTo('thinking')} />;
-      case 'thinking': return <OurThinkingPage onBack={() => navigateTo('home')} onInsightClick={(id, title) => navigateTo('insight', id, title)} />;
+      case 'thinking': return <OurThinkingPage onBack={() => navigateTo('home')} onInsightClick={(item) => navigateTo('insight', item.id, item.title, item.type)} />;
       case 'practice': return <PracticeAreaPage id={view.id || ''} onBack={() => navigateTo('home')} onNavigate={navigateTo} />;
       case 'rfp': return <RFPPage onBack={() => navigateTo('home')} />;
       case 'page': return <GenericPage id={view.id} onBack={() => navigateTo('home')} />;
@@ -211,10 +209,10 @@ const App: React.FC = () => {
         return (
           <>
             <Hero />
-            <NewsCarousel onInsightClick={(id, title) => navigateTo('insight', id, title)} />
+            <NewsCarousel onInsightClick={(item) => navigateTo('insight', item.id, item.title, item.type)} />
             <QuotesCarousel />
             <PracticeAreas onNavigate={navigateTo} />
-            <Insights onInsightClick={(id, title) => navigateTo('insight', id, title)} />
+            <Insights onInsightClick={(item) => navigateTo('insight', item.id, item.title, item.type)} />
             <OfficeLocation />
           </>
         );
@@ -225,7 +223,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Disclaimer Overlay */}
       {showDisclaimer && <DisclaimerModal onAcknowledge={handleDisclaimerAcknowledge} />}
 
       {!['admin', 'login', 'careers', 'jobs', 'dashboard', 'booking'].includes(view.type) && <Navbar onNavigate={navigateTo} />}
@@ -242,10 +239,9 @@ const App: React.FC = () => {
       )}
 
       <main 
-        key={view.type + (view.id || '')} 
-        className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${
+        className={`transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu ${
           isTransitioning 
-            ? 'opacity-0 translate-y-4 blur-sm scale-[0.98]' 
+            ? 'opacity-0 translate-y-2 blur-sm scale-[0.99]' 
             : 'opacity-100 translate-y-0 blur-0 scale-100'
         }`}
       >

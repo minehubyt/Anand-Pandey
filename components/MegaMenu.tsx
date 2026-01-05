@@ -119,9 +119,7 @@ export const MENU_DATA: Record<string, {
       {
         title: 'DOMESTIC',
         links: [
-          { name: 'New Delhi', type: 'practice', id: 'locations', href: '#locations' },
-          { name: 'Lucknow', type: 'practice', id: 'locations', href: '#locations' },
-          { name: 'Mumbai (Coming Soon)', type: 'practice', id: 'locations', href: '#locations' },
+          { name: 'Ranchi (Headquarters)', type: 'practice', id: 'locations', href: '#locations' },
         ]
       },
       {
